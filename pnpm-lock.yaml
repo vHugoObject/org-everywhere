@@ -18,6 +18,9 @@ importers:
       '@eslint/js':
         specifier: ^9.30.1
         version: 9.31.0
+      '@sctg/vite-plugin-github-pages-spa':
+        specifier: ^0.1.1
+        version: 0.1.1(vite@7.0.5)
       '@types/react':
         specifier: ^19.1.8
         version: 19.1.8
@@ -479,6 +482,11 @@ packages:
     resolution: {integrity: sha512-M/fKi4sasCdM8i0aWJjCSFm2qEnYRR8AMLG2kxp6wD13+tMGA4Z1tVAuHkNRjud5SW2EM3naLuK35w9twvf6aA==}
     cpu: [x64]
     os: [win32]
+
+  '@sctg/vite-plugin-github-pages-spa@0.1.1':
+    resolution: {integrity: sha512-l1jBVbz9otNTKM8QEQLnzMzo70odFeiVcqMMfZP9HFrOFSnPRctiUu2SEhEETRJyrh+ZogK+9Spc5/Y2pRbPrQ==}
+    peerDependencies:
+      vite: '>=6.3.0'
 
   '@types/babel__core@7.20.5':
     resolution: {integrity: sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==}
@@ -1446,6 +1454,10 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.45.1':
     optional: true
+
+  '@sctg/vite-plugin-github-pages-spa@0.1.1(vite@7.0.5)':
+    dependencies:
+      vite: 7.0.5
 
   '@types/babel__core@7.20.5':
     dependencies:
