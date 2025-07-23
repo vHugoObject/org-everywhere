@@ -1,11 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { githubPagesSpa } from '@sctg/vite-plugin-github-pages-spa';
-// https://vite.dev/config/
+import { nodePolyfills } from "vite-plugin-node-polyfills"
+
+
 export default defineConfig({
-  base: "org-everywhere",
   plugins: [
-    react(),
-    githubPagesSpa({verbose: true})
+    react({jsxRuntime: 'classic'}),
+    nodePolyfills()
   ],
 })

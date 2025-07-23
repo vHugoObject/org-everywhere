@@ -1,0 +1,25 @@
+@import '../../../../colors.css';
+
+.header-content-container {
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.header-content__edit-icon {
+  color: var(--base2);
+
+  margin-top: 10px;
+  margin-right: 5px;
+  float: left;
+}
+
+.header-content__insert-timestamp-button {
+  color: var(--base0);
+
+  display: flex;
+  align-items: center;
+}
+
+.insert-timestamp-icon {
+  margin-right: 5px;
+}
