@@ -8,4 +8,9 @@ export default defineConfig({
     react({jsxRuntime: 'classic'}),
     nodePolyfills()
   ],
+  build: {
+    rollupOptions: {
+      external: ['**/*.{unit, browser, integration}.test.ts[x]']
+    }
+  }
 })

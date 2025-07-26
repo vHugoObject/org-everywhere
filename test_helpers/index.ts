@@ -2,7 +2,6 @@
 
 import fs from 'fs';
 import path from 'path';
-import { render } from "vitest-browser-react";
 import userEvent from "@testing-library/user-event";
 import { BrowserRouter } from "react-router-dom";
 
