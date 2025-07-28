@@ -72,6 +72,7 @@ export const fastCheckRandomItemFromArrayWithIndex = curry(
     testArray: Array<T>,
   ): [fc.Arbitrary<T>, number] => {
     return pipe([fastCheckRandomObjectKey(fcGen),
+
       over([partialRight(property, [testArray]), identity])])(testArray)
   },
 );
@@ -163,7 +164,7 @@ export const fastCheckRandomRGBA = (fcGen: fc.GeneratorValue): ColorObject => {
     r,
     g,
     b,
-    a: fastCheckRandomFloatBetweenZeroAndOne(fcGen)
+    alpha: fastCheckRandomFloatBetweenZeroAndOne(fcGen)
   }
 }
 

@@ -3,6 +3,7 @@
 import fs from 'fs';
 import path from 'path';
 import userEvent from "@testing-library/user-event";
+import { render } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 
 

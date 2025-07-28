@@ -18,7 +18,7 @@ import HeaderContent from '../HeaderContent';
 import HeaderActionDrawer from './components/HeaderActionDrawer';
 
 import { headerWithId } from '../../../../lib/org_utils';
-import { interpolateColors, rgbaObject, rgbaString, readRgbaVariable } from '../../../../lib/color';
+import { interpolateColorsAndReturnCSS, readRgbaVariable, createColorObject } from '../../../../lib/color';
 import { getCurrentTimestamp, millisDuration } from '../../../../lib/timestamps';
 import { Map } from 'immutable';
 import { shareContent } from '../../../../lib/share_utils';
@@ -453,11 +453,11 @@ class Header extends PureComponent {
           const isRightActionActivated =
             -1 * swipedDistance >= this.SWIPE_ACTION_ACTIVATION_DISTANCE;
 
-          const leftActivatedBackgroundColor = rgbaObject(0, 128, 0, 1);
-          const rightActivatedBackgroundColor = rgbaObject(255, 0, 0, 1);
+          const leftActivatedBackgroundColor = createColorObject(0, 128, 0, 1);
+          const rightActivatedBackgroundColor = createColorObject(255, 0, 0, 1);
 
-          const disabledIconColor = rgbaObject(0, 0, 0, 1);
-          const activatedIconColor = rgbaObject(255, 255, 255, 1);
+          const disabledIconColor = createColorObject(0, 0, 0, 1);
+          const activatedIconColor = createColorObject(255, 255, 255, 1);
 
           const leftSwipeActionContainerStyle = {
             width: interpolatedStyle.marginLeft,
@@ -488,24 +488,22 @@ class Header extends PureComponent {
                 {(leftInterpolatedStyle) => {
                   const leftStyle = {
                     width: leftInterpolatedStyle.width,
-                    backgroundColor: rgbaString(
-                      interpolateColors(
+                    backgroundColor: 
+                      interpolateColorsAndReturnCSS(
                         this.state.disabledBackgroundColor,
                         leftActivatedBackgroundColor,
                         leftInterpolatedStyle.backgroundColorFactor
-                      )
                     ),
                   };
 
                   const leftIconStyle = {
                     display: swipedDistance > 30 ? '' : 'none',
-                    color: rgbaString(
-                      interpolateColors(
+                    color: 
+                      interpolateColorsAndReturnCSS(
                         disabledIconColor,
                         activatedIconColor,
                         leftInterpolatedStyle.backgroundColorFactor
                       )
-                    ),
                   };
 
                   return (
@@ -522,24 +520,22 @@ class Header extends PureComponent {
                 {(rightInterpolatedStyle) => {
                   const rightStyle = {
                     width: rightInterpolatedStyle.width,
-                    backgroundColor: rgbaString(
-                      interpolateColors(
+                    backgroundColor: 
+                      interpolateColorsAndReturnCSS(
                         this.state.disabledBackgroundColor,
                         rightActivatedBackgroundColor,
-                        rightInterpolatedStyle.backgroundColorFactor
-                      )
-                    ),
+                        rightInterpolatedStyle.backgroundColorFactor                      
+                    )
                   };
 
                   const rightIconStyle = {
                     display: -1 * swipedDistance > 30 ? '' : 'none',
-                    color: rgbaString(
-                      interpolateColors(
+                    color: 
+                      interpolateColorsAndReturnCSS(
                         disabledIconColor,
                         activatedIconColor,
                         rightInterpolatedStyle.backgroundColorFactor
                       )
-                    ),
                   };
 
                   return (

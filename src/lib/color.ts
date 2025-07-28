@@ -1,7 +1,13 @@
 import Color from 'color'
 import type {ColorObject} from 'color';
-import { curry, property } from "lodash/fp"
+import { curry, property, pipe, forEach, partialRight, zipObject } from "lodash/fp"
 import { themes } from "./constants"
+
+export const createColorInstance =  partialRight(Color, [null])
+export const convertColorInstanceIntoObject =  Function.prototype.call.bind(Color.prototype.object)
+export const convertColorInstanceIntoCSS =  Function.prototype.call.bind(Color.prototype.string)
+export const createColorObject = pipe([Array.of, zipObject(["r", "g", "b", "alpha"])])
+export const convertRGBAIntoCSS = pipe([createColorInstance, convertColorInstanceIntoCSS])
 
 
 // Interpolates between two colors.
@@ -11,18 +17,21 @@ import { themes } from "./constants"
 // An object with keys {r, g, b, a} will be returned.
 
 export const interpolateColors = (colorA: ColorObject, colorB: ColorObject, interpolationFactor: number): ColorObject => {
+
+  const alpha: number = colorB.alpha && colorA.alpha ? (colorB.alpha - colorA.alpha) * interpolationFactor + colorA.alpha : 0
   return {
     r: (colorB.r - colorA.r) * interpolationFactor + colorA.r,
     g: (colorB.g - colorA.g) * interpolationFactor + colorA.g,
     b: (colorB.b - colorA.b) * interpolationFactor + colorA.b,
-    a: (colorB.a - colorA.a) * interpolationFactor + colorA.a,
+    alpha
   };
 };
 
-// assumes var is either a longform-hex or rgb(a) color value
+export const interpolateColorsAndReturnCSS = pipe([interpolateColors, convertRGBAIntoCSS])
+
 export const readRgbaVariable = (varName: string): ColorObject => {
   const varValue = getComputedStyle(document.documentElement).getPropertyValue(varName);
-  return Color(varValue).object() 
+  return createColorObject(varValue)
 };
 
 
@@ -30,20 +39,23 @@ export const getThemeFromThemeObject = curry((theme: string, colorScheme: string
   return property([theme, colorScheme], themes)
 })
 
+
 export const loadTheme = (theme: string = 'Solarized', colorScheme: string = 'Light'): void => {
   if (colorScheme === 'OS') {
     const osPreference = window.matchMedia('(prefers-color-scheme: dark)');
     if ('matches' in osPreference) {
       colorScheme = osPreference.matches ? 'Dark' : 'Light';
     } else {
-      colorScheme = 'Light';
+      colorScheme = 'Dark';
     }
   }
-  // const style = document.documentElement.style;
-  // Object.entries(themes[theme][colorScheme]).forEach(([k, v]) => style.setProperty(k, v));
-
-  // // set theme color on android
-  // document
-  //   .querySelector('meta[name="theme-color"]')
-  //   .setAttribute('content', themes[theme]['--base3']);
+  const style = document.documentElement.style;
+  pipe([
+    getThemeFromThemeObject,
+    Object.entries,
+    forEach(([k,v]: [string, string]) => {
+      style.setProperty(k, v)
+    })
+  ])(theme, colorScheme)
+  
 };

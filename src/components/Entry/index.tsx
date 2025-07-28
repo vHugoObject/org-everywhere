@@ -152,7 +152,7 @@ class Entry extends PureComponent {
       defaultFilePath,
     } = this.props;
 
-    //loadTheme(theme, colorScheme);
+    loadTheme(theme, colorScheme);
 
     const pendingCapturePath = !!pendingCapture && `/file${pendingCapture.get('capturePath')}`;
     const shouldRedirectToCapturePath = pendingCapturePath && pendingCapturePath !== pathname;

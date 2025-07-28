@@ -1,12 +1,12 @@
 import { Motion, spring } from 'react-motion';
 
-import { interpolateColors, rgbaObject, rgbaString } from '../../../lib/color';
+import { interpolateColorsAndReturnCSS, createColorObject } from '../../../lib/color';
 
 import './stylesheet.css';
 
 export default ({ state, onClick }) => {
-  const uncheckedColor = rgbaObject(255, 255, 255, 1);
-  const checkedColor = rgbaObject(238, 232, 213, 1);
+  const uncheckedColor = createColorObject(255, 255, 255, 1);
+  const checkedColor = createColorObject(238, 232, 213, 1);
 
   const checkboxStyle = {
     colorFactor: spring(
@@ -22,9 +22,8 @@ export default ({ state, onClick }) => {
   return (
     <Motion style={checkboxStyle}>
       {(style) => {
-        const backgroundColor = rgbaString(
-          interpolateColors(uncheckedColor, checkedColor, style.colorFactor)
-        );
+        const backgroundColor = 
+          interpolateColorsAndReturnCSS(uncheckedColor, checkedColor, style.colorFactor)
 
         return (
           <div className="checkbox" onClick={onClick} style={{ backgroundColor }}>
