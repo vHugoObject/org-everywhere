@@ -14,6 +14,9 @@ importers:
       '@testing-library/jest-dom':
         specifier: ^6.6.4
         version: 6.6.4
+      '@types/css-modules':
+        specifier: ^1.0.5
+        version: 1.0.5
       '@types/react':
         specifier: ^19.1.8
         version: 19.1.8
@@ -799,6 +802,9 @@ packages:
 
   '@types/chai@5.2.2':
     resolution: {integrity: sha512-8kB30R7Hwqf40JPiKhVzodJs2Qc1ZJ5zuT3uzw5Hq/dhNCl3G3l83jfpdI1e20BP348+fV7VIL/+FxaXkqBmWg==}
+
+  '@types/css-modules@1.0.5':
+    resolution: {integrity: sha512-oeKafs/df9lwOvtfiXVliZsocFVOexK9PZtLQWuPeuVCFR7jwiqlg60lu80JTe5NFNtH3tnV6Fs/ySR8BUPHAw==}
 
   '@types/deep-eql@4.0.2':
     resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
@@ -4292,6 +4298,8 @@ snapshots:
   '@types/chai@5.2.2':
     dependencies:
       '@types/deep-eql': 4.0.2
+
+  '@types/css-modules@1.0.5': {}
 
   '@types/deep-eql@4.0.2': {}
 

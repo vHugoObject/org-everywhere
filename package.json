@@ -1,9 +1,6 @@
 {
   "name": "org-everywhere",
   "private": true,
-  "engines": {
-    "node": "^20.17.0"
-  },
   "version": "0.0.0",
   "type": "module",
   "scripts": {
@@ -17,6 +14,7 @@
   "dependencies": {
     "@bity/oauth2-auth-code-pkce": "^2.13.0",
     "@testing-library/jest-dom": "^6.6.4",
+    "@types/css-modules": "^1.0.5",
     "@types/react": "^19.1.8",
     "@vitejs/plugin-react": "^4.5.1",
     "@vitest/expect": "^3.2.4",
