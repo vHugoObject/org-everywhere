@@ -1,5 +1,4 @@
 import { inRange, merge } from "lodash/fp"
-import type { ExpectStatic } from "vitest";
 import { expect as baseExpect } from "vitest";
 import * as matchers from "@testing-library/jest-dom/matchers"
 
