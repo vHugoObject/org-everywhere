@@ -36,7 +36,6 @@ export const TESTORGCAPTURETEMPLATESWITHCURSORSET: Set<string> = new Set(
   TESTORGCAPTURETEMPLATESWITHCURSOR,
 );
 
-
 export const TESTMARKUPOPTIONS: Array<string> = ["*", "/", "_", "~", "+", ""];
 export const TESTMARKUPTYPES: Array<string> = [
   "bold",
@@ -190,7 +189,6 @@ export const TESTTIMESTAMPBRACKETSMAPPING: Record<string, [string, string]> = {
 export const TESTORGTIMESTAMPOBJECTISACTIVE = [true, false];
 export const TESTORGTIMESTAMPOBJECTWITHSTARTTIME = [true, false];
 export const TESTORGTIMESTAMPOBJECTWITHENDHOUR = [true, false];
-
 
 export const TESTINBUFFERSETTINGS: Array<string> = [
   "#+ARCHIVE",
@@ -640,6 +638,3 @@ export const TESTFILEEXTENSIONS: Array<string> = [
 ];
 
 export const TESTSLASHES = ["\\", "/"];
-
-
-
