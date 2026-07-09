@@ -16,14 +16,22 @@ const DEFAULT_BINDINGS: Array<[string, string, string]> = [
   ["Undo", "undo", "ctrl+/"],
 ];
 
-export const calculateNamedKeybindings = (customKeybindings: Map<string, string>) =>
-  DEFAULT_BINDINGS.map(([bindingName, _bindingAction, binding]: [string, string, string]) => [
-    bindingName,
-    customKeybindings.get(bindingName, binding),
-  ]);
+export const calculateNamedKeybindings = (
+  customKeybindings: Map<string, string>,
+) =>
+  DEFAULT_BINDINGS.map(
+    ([bindingName, _bindingAction, binding]: [string, string, string]) => [
+      bindingName,
+      customKeybindings.get(bindingName, binding),
+    ],
+  );
 
-export const calculateActionedKeybindings = (customKeybindings: Map<string, string>) =>
-  DEFAULT_BINDINGS.map(([bindingName, bindingAction, binding]: [string, string, string]) => [
-    bindingAction,
-    customKeybindings.get(bindingName, binding),
-  ]);
+export const calculateActionedKeybindings = (
+  customKeybindings: Map<string, string>,
+) =>
+  DEFAULT_BINDINGS.map(
+    ([bindingName, bindingAction, binding]: [string, string, string]) => [
+      bindingAction,
+      customKeybindings.get(bindingName, binding),
+    ],
+  );

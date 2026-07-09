@@ -15,7 +15,9 @@ export const updateTemplateFieldPathValue = (
   newValue,
 });
 
-export const addNewTemplateOrgFileAvailability = (templateId: number): OrgCaptureAction => ({
+export const addNewTemplateOrgFileAvailability = (
+  templateId: number,
+): OrgCaptureAction => ({
   type: "ADD_NEW_TEMPLATE_ORG_FILE_AVAILABILITY",
   templateId,
 });
@@ -29,12 +31,17 @@ export const removeTemplateOrgFileAvailability = (
   orgFileAvailabilityIndex,
 });
 
-export const addNewTemplateHeaderPath = (templateId: number): OrgCaptureAction => ({
+export const addNewTemplateHeaderPath = (
+  templateId: number,
+): OrgCaptureAction => ({
   type: "ADD_NEW_TEMPLATE_HEADER_PATH",
   templateId,
 });
 
-export const removeTemplateHeaderPath = (templateId: number, headerPathIndex: number): OrgCaptureAction => ({
+export const removeTemplateHeaderPath = (
+  templateId: number,
+  headerPathIndex: number,
+): OrgCaptureAction => ({
   type: "REMOVE_TEMPLATE_HEADER_PATH",
   templateId,
   headerPathIndex,
@@ -45,12 +52,17 @@ export const deleteTemplate = (templateId: number): OrgCaptureAction => ({
   templateId,
 });
 
-export const restoreCaptureSettings = (newSettings: Record<string, string>): OrgCaptureAction => ({
+export const restoreCaptureSettings = (
+  newSettings: Record<string, string>,
+): OrgCaptureAction => ({
   type: "RESTORE_CAPTURE_SETTINGS",
   newSettings,
 });
 
-export const reorderCaptureTemplate = (fromIndex: number, toIndex: number): OrgCaptureAction => ({
+export const reorderCaptureTemplate = (
+  fromIndex: number,
+  toIndex: number,
+): OrgCaptureAction => ({
   type: "REORDER_CAPTURE_TEMPLATE",
   fromIndex,
   toIndex,

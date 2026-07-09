@@ -1,54 +1,56 @@
 import { debounce } from "lodash";
-import type { Dispatch } from 'redux';
+import type { Dispatch } from "redux";
 import { ActionCreators, ActionTypes } from "redux-undo";
 import substituteTemplateVariables from "../lib/capture_template_substitution";
 import { exportOrg } from "../lib/export_org";
 import { headerWithPath, STATIC_FILE_PREFIX } from "../lib/org_utils";
 import {
-    activatePopup,
-    closePopup,
-    hideLoadingMessage,
-    setDisappearingLoadingMessage,
-    setIsLoading,
-    setLoadingMessage,
+  activatePopup,
+  closePopup,
+  hideLoadingMessage,
+  setDisappearingLoadingMessage,
+  setIsLoading,
+  setLoadingMessage,
 } from "./base";
 
 import { addSeconds, isAfter, parseISO } from "date-fns";
 import sampleCaptureTemplates from "../lib/sample_capture_templates";
 import type {
-    Context,
-    EditModeType,
-    LogEntryType,
-    OrgAction,
-    OrgTimestampPart,
-    PlanningType,
+  Context,
+  EditModeType,
+  LogEntryType,
+  OrgAction,
+  OrgTimestampPart,
+  PlanningType,
   SyncOptions,
-  ForceAction
+  ForceAction,
 } from "../types";
 import {
-    persistIsDirty,
-    saveFileContentsToLocalStorage,
+  persistIsDirty,
+  saveFileContentsToLocalStorage,
 } from "../util/file_persister";
 import {
-    localStorageAvailable,
-    readOpennessState,
+  localStorageAvailable,
+  readOpennessState,
 } from "../util/settings_persister";
 
-export const parseFile = (path: string, contents: string) => (dispatch: Dispatch<OrgAction>): void => {
-  if (localStorageAvailable && !path.startsWith(STATIC_FILE_PREFIX)) {
-    saveFileContentsToLocalStorage(path, contents);
-    const opennessState = readOpennessState();
-    if (!!opennessState) {
-      dispatch(setOpennessState(path, opennessState[path]));
+export const parseFile =
+  (path: string, contents: string) =>
+  (dispatch: Dispatch<OrgAction>): void => {
+    if (localStorageAvailable && !path.startsWith(STATIC_FILE_PREFIX)) {
+      saveFileContentsToLocalStorage(path, contents);
+      const opennessState = readOpennessState();
+      if (!!opennessState) {
+        dispatch(setOpennessState(path, opennessState[path]));
+      }
     }
-  }
-  dispatch({
-    type: "PARSE_FILE",
-    path,
-    contents,
-  });
-  dispatch(applyOpennessState(path));
-};
+    dispatch({
+      type: "PARSE_FILE",
+      path,
+      contents,
+    });
+    dispatch(applyOpennessState(path));
+  };
 
 export const setLastSyncAt = (lastSyncAt: Date, path: string): OrgAction => ({
   type: "SET_LAST_SYNC_AT",
@@ -56,7 +58,7 @@ export const setLastSyncAt = (lastSyncAt: Date, path: string): OrgAction => ({
   lastSyncAt,
 });
 
-export const resetFileDisplay = (): (dispatch: Dispatch) => void => {
+export const resetFileDisplay = (): ((dispatch: Dispatch) => void) => {
   return (dispatch: Dispatch): void => {
     dispatch(widenHeader());
     dispatch(closePopup());
@@ -67,12 +69,20 @@ export const resetFileDisplay = (): (dispatch: Dispatch) => void => {
 };
 
 const getDebouncedSyncFunction = () =>
-  debounce((dispatch: Dispatch, options: SyncOptions) => dispatch(doSync(options)), 3000, {
-    leading: true,
-    trailing: true,
-  });
+  debounce(
+    (dispatch: Dispatch, options: SyncOptions) => dispatch(doSync(options)),
+    3000,
+    {
+      leading: true,
+      trailing: true,
+    },
+  );
 const debouncedSyncFunctions = {};
-const syncDebounced = (dispatch: Dispatch, getState, options: SyncOptions): void => {
+const syncDebounced = (
+  dispatch: Dispatch,
+  getState,
+  options: SyncOptions,
+): void => {
   // to make sure no file is skipped when multiple files are dirty
   // a seperately debounced function is used per file
   let filesToSync = [];
@@ -95,23 +105,27 @@ const syncDebounced = (dispatch: Dispatch, getState, options: SyncOptions): void
   });
 };
 
-export const sync = (options: SyncOptions) => (dispatch: Dispatch, getState): void => {
-  // Don't do anything if the browser is not online. When it gets back
-  // from an offline state, a new `sync`action will be triggered then.
-  if (getState().base.get("online")) {
-    // If the user hits the 'sync' button, no matter if there's a sync
-    // in progress or if the sync 'should' be debounced, listen to the
-    // user and start a sync.
-    if (options.forceAction === "manual") {
-      console.log("forcing sync");
-      const files = getState().org.present.get("files");
-      // sync all files on manual sync
-      files.keySeq().forEach((path: string) => dispatch(doSync({ ...options, path })));
-    } else {
-      syncDebounced(dispatch, getState, options);
+export const sync =
+  (options: SyncOptions) =>
+  (dispatch: Dispatch, getState): void => {
+    // Don't do anything if the browser is not online. When it gets back
+    // from an offline state, a new `sync`action will be triggered then.
+    if (getState().base.get("online")) {
+      // If the user hits the 'sync' button, no matter if there's a sync
+      // in progress or if the sync 'should' be debounced, listen to the
+      // user and start a sync.
+      if (options.forceAction === "manual") {
+        console.log("forcing sync");
+        const files = getState().org.present.get("files");
+        // sync all files on manual sync
+        files
+          .keySeq()
+          .forEach((path: string) => dispatch(doSync({ ...options, path })));
+      } else {
+        syncDebounced(dispatch, getState, options);
+      }
     }
-  }
-};
+  };
 
 // doSync is the actual sync action synchronizing/persisting the Org
 // file. When 'live sync' is enabled, there's potentially a quick
@@ -133,7 +147,12 @@ const doSync =
     successMessage = "Changes pushed",
     shouldSuppressMessages = false,
     path,
-  }: { forceAction?: ForceAction; successMessage?: string | undefined; shouldSuppressMessages?: boolean | undefined; path?: string } = {}) =>
+  }: {
+    forceAction?: ForceAction;
+    successMessage?: string | undefined;
+    shouldSuppressMessages?: boolean | undefined;
+    path?: string;
+  } = {}) =>
   (dispatch: Dispatch, getState): void => {
     const client = getState().syncBackend.get("client");
     const currentPath = getState().org.present.get("path");
@@ -176,91 +195,107 @@ const doSync =
 
     client
       .getFileContentsAndMetadata(path)
-      .then(({ contents, lastModifiedAt }: { contents: string; lastModifiedAt: string; }): void => {
-        const isDirty = getState().org.present.getIn([
-          "files",
-          path,
-          "isDirty",
-        ]);
-        const lastServerModifiedAt = parseISO(lastModifiedAt);
-        const lastSyncAt = getState().org.present.getIn([
-          "files",
-          path,
-          "lastSyncAt",
-        ]);
+      .then(
+        ({
+          contents,
+          lastModifiedAt,
+        }: {
+          contents: string;
+          lastModifiedAt: string;
+        }): void => {
+          const isDirty = getState().org.present.getIn([
+            "files",
+            path,
+            "isDirty",
+          ]);
+          const lastServerModifiedAt = parseISO(lastModifiedAt);
+          const lastSyncAt = getState().org.present.getIn([
+            "files",
+            path,
+            "lastSyncAt",
+          ]);
 
-        if (
-          isAfter(lastSyncAt, lastServerModifiedAt) ||
-          forceAction === "push"
-        ) {
-          if (isDirty) {
-            const contents = exportOrg({
-              headers: getState().org.present.getIn(["files", path, "headers"]),
-              linesBeforeHeadings: getState().org.present.getIn([
-                "files",
-                path,
-                "linesBeforeHeadings",
-              ]),
-              dontIndent: getState().base.get("shouldNotIndentOnExport"),
-            });
-            client
-              .updateFile(path, contents)
-              .then((): void => {
-                if (!shouldSuppressMessages) {
-                  dispatch(setDisappearingLoadingMessage(successMessage, 2000));
-                } else {
-                  setTimeout(() => dispatch(hideLoadingMessage()), 2000);
-                }
-                dispatch(setIsLoading(false, path));
-                dispatch(setDirty(false, path));
-                dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
-              })
-              .catch((error): void => {
-                const err = `There was an error pushing the file ${path}: ${error.toString()}`;
-                console.error(err);
-                dispatch(setDisappearingLoadingMessage(err, 5000));
-                dispatch(hideLoadingMessage());
-                dispatch(setIsLoading(false, path));
-                // Re-enqueue the file to be synchronized again
-                dispatch(sync({ path }));
+          if (
+            isAfter(lastSyncAt, lastServerModifiedAt) ||
+            forceAction === "push"
+          ) {
+            if (isDirty) {
+              const contents = exportOrg({
+                headers: getState().org.present.getIn([
+                  "files",
+                  path,
+                  "headers",
+                ]),
+                linesBeforeHeadings: getState().org.present.getIn([
+                  "files",
+                  path,
+                  "linesBeforeHeadings",
+                ]),
+                dontIndent: getState().base.get("shouldNotIndentOnExport"),
               });
-          } else {
-            if (!shouldSuppressMessages) {
-              dispatch(setDisappearingLoadingMessage("Nothing to sync", 2000));
+              client
+                .updateFile(path, contents)
+                .then((): void => {
+                  if (!shouldSuppressMessages) {
+                    dispatch(
+                      setDisappearingLoadingMessage(successMessage, 2000),
+                    );
+                  } else {
+                    setTimeout(() => dispatch(hideLoadingMessage()), 2000);
+                  }
+                  dispatch(setIsLoading(false, path));
+                  dispatch(setDirty(false, path));
+                  dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
+                })
+                .catch((error): void => {
+                  const err = `There was an error pushing the file ${path}: ${error.toString()}`;
+                  console.error(err);
+                  dispatch(setDisappearingLoadingMessage(err, 5000));
+                  dispatch(hideLoadingMessage());
+                  dispatch(setIsLoading(false, path));
+                  // Re-enqueue the file to be synchronized again
+                  dispatch(sync({ path }));
+                });
             } else {
-              setTimeout(() => dispatch(hideLoadingMessage()), 2000);
+              if (!shouldSuppressMessages) {
+                dispatch(
+                  setDisappearingLoadingMessage("Nothing to sync", 2000),
+                );
+              } else {
+                setTimeout(() => dispatch(hideLoadingMessage()), 2000);
+              }
+              dispatch(setIsLoading(false, path));
             }
-            dispatch(setIsLoading(false, path));
-          }
-        } else {
-          if (isDirty && forceAction !== "pull") {
-            dispatch(hideLoadingMessage());
-            dispatch(setIsLoading(false, path));
-            dispatch(
-              activatePopup("sync-confirmation", {
-                lastServerModifiedAt,
-                lastSyncAt,
-                path,
-              }),
-            );
           } else {
-            dispatch(parseFile(path, contents));
-            dispatch(setDirty(false, path));
-            dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
-            if (!shouldSuppressMessages) {
+            if (isDirty && forceAction !== "pull") {
+              dispatch(hideLoadingMessage());
+              dispatch(setIsLoading(false, path));
               dispatch(
-                setDisappearingLoadingMessage(
-                  `Latest version pulled: ${path}`,
-                  2000,
-                ),
+                activatePopup("sync-confirmation", {
+                  lastServerModifiedAt,
+                  lastSyncAt,
+                  path,
+                }),
               );
             } else {
-              setTimeout(() => dispatch(hideLoadingMessage()), 2000);
+              dispatch(parseFile(path, contents));
+              dispatch(setDirty(false, path));
+              dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
+              if (!shouldSuppressMessages) {
+                dispatch(
+                  setDisappearingLoadingMessage(
+                    `Latest version pulled: ${path}`,
+                    2000,
+                  ),
+                );
+              } else {
+                setTimeout(() => dispatch(hideLoadingMessage()), 2000);
+              }
+              dispatch(setIsLoading(false, path));
             }
-            dispatch(setIsLoading(false, path));
           }
-        }
-      })
+        },
+      )
       .catch((): void => {
         dispatch(hideLoadingMessage());
         dispatch(setIsLoading(false, path));
@@ -273,39 +308,50 @@ export const openHeader = (headerId: number): OrgAction => ({
   headerId,
 });
 
-export const toggleHeaderOpened = (headerId: number, closeSubheadersRecursively: boolean): OrgAction => ({
+export const toggleHeaderOpened = (
+  headerId: number,
+  closeSubheadersRecursively: boolean,
+): OrgAction => ({
   type: "TOGGLE_HEADER_OPENED",
   headerId,
   closeSubheadersRecursively,
 });
 
-export const selectHeader = (headerId: number) => (dispatch: Dispatch<OrgAction>): void => {
-  dispatch({ type: "SELECT_HEADER", headerId });
+export const selectHeader =
+  (headerId: number) =>
+  (dispatch: Dispatch<OrgAction>): void => {
+    dispatch({ type: "SELECT_HEADER", headerId });
 
-  if (!!headerId) {
-    dispatch(setSelectedTableCellId(null));
-    dispatch(setSelectedListItemId(null));
-  }
-};
+    if (!!headerId) {
+      dispatch(setSelectedTableCellId(null));
+      dispatch(setSelectedListItemId(null));
+    }
+  };
 
-export const selectHeaderIndex = (headerIndex: number) => (dispatch: Dispatch): void => {
-  dispatch({ type: "SELECT_HEADER_INDEX", headerIndex });
-};
+export const selectHeaderIndex =
+  (headerIndex: number) =>
+  (dispatch: Dispatch): void => {
+    dispatch({ type: "SELECT_HEADER_INDEX", headerIndex });
+  };
 
-export const setPath = (path: string) => (dispatch: Dispatch): void => {
-  dispatch({
-    type: "SET_PATH",
-    path,
-  });
-  dispatch({ type: ActionTypes.CLEAR_HISTORY });
-};
+export const setPath =
+  (path: string) =>
+  (dispatch: Dispatch): void => {
+    dispatch({
+      type: "SET_PATH",
+      path,
+    });
+    dispatch({ type: ActionTypes.CLEAR_HISTORY });
+  };
 
-export const selectHeaderAndOpenParents = (path: string, headerId: number) => (dispatch: Dispatch): void => {
-  dispatch(setPath(path));
-  dispatch({ type: "OPEN_PARENTS_OF_HEADER", headerId });
-  // select header after the file is displayed to allow the header to scroll into view
-  setTimeout(() => dispatch(selectHeader(headerId)), 0);
-};
+export const selectHeaderAndOpenParents =
+  (path: string, headerId: number) =>
+  (dispatch: Dispatch): void => {
+    dispatch(setPath(path));
+    dispatch({ type: "OPEN_PARENTS_OF_HEADER", headerId });
+    // select header after the file is displayed to allow the header to scroll into view
+    setTimeout(() => dispatch(selectHeader(headerId)), 0);
+  };
 
 /**
  * Action to advance the state, e.g. TODO -> DONE, of the header specified in headerId.
@@ -313,7 +359,10 @@ export const selectHeaderAndOpenParents = (path: string, headerId: number) => (d
  * @param {*} headerId headerId to advance, or null if you want the currently narrowed header.
  * @param {*} logIntoDrawer false to log state change into body, true to log into :LOGBOOK: drawer.
  */
-export const advanceTodoState = (headerId: number, logIntoDrawer: boolean): OrgAction => ({
+export const advanceTodoState = (
+  headerId: number,
+  logIntoDrawer: boolean,
+): OrgAction => ({
   type: "ADVANCE_TODO_STATE",
   headerId,
   logIntoDrawer,
@@ -321,7 +370,11 @@ export const advanceTodoState = (headerId: number, logIntoDrawer: boolean): OrgA
   timestamp: new Date(),
 });
 
-export const setTodoState = (headerId: number, newTodoState: string, logIntoDrawer: boolean): OrgAction => ({
+export const setTodoState = (
+  headerId: number,
+  newTodoState: string,
+  logIntoDrawer: boolean,
+): OrgAction => ({
   type: "SET_TODO_STATE",
   newTodoState,
   headerId,
@@ -339,14 +392,20 @@ export const exitEditMode = (): OrgAction => ({
   type: "EXIT_EDIT_MODE",
 });
 
-export const updateHeaderTitle = (headerId: number, newRawTitle: string): OrgAction => ({
+export const updateHeaderTitle = (
+  headerId: number,
+  newRawTitle: string,
+): OrgAction => ({
   type: "UPDATE_HEADER_TppITLE",
   headerId,
   newRawTitle,
   dirtying: true,
 });
 
-export const updateHeaderDescription = (headerId: number, newRawDescription: string): OrgAction => ({
+export const updateHeaderDescription = (
+  headerId: number,
+  newRawDescription: string,
+): OrgAction => ({
   type: "UPDATE_HEADER_DESCRIPTION",
   headerId,
   newRawDescription,
@@ -378,11 +437,13 @@ export const selectNextSiblingHeader = (headerId: number): OrgAction => ({
   headerId,
 });
 
-export const addHeaderAndEdit = (headerId: number) => (dispatch: Dispatch): void => {
-  dispatch(addHeader(headerId));
-  dispatch(selectNextSiblingHeader(headerId));
-  dispatch(activatePopup("title-editor"));
-};
+export const addHeaderAndEdit =
+  (headerId: number) =>
+  (dispatch: Dispatch): void => {
+    dispatch(addHeader(headerId));
+    dispatch(selectNextSiblingHeader(headerId));
+    dispatch(activatePopup("title-editor"));
+  };
 
 export const selectNextVisibleHeader = (headerId: number): OrgAction => ({
   type: "SELECT_NEXT_VISIBLE_HEADER",
@@ -466,7 +527,10 @@ export const widenHeader = (): OrgAction => ({
   type: "WIDEN_HEADER",
 });
 
-export const setOpennessState = (path: string, opennessState: boolean): OrgAction => ({
+export const setOpennessState = (
+  path: string,
+  opennessState: boolean,
+): OrgAction => ({
   type: "SET_OPENNESS_STATE",
   path,
   opennessState,
@@ -483,27 +547,34 @@ export const dirtyAction = (isDirty: boolean, path: string): OrgAction => ({
   path,
 });
 
-export const setDirty = (isDirty: boolean, path: string) => (dispatch: Dispatch): void => {
-  persistIsDirty(isDirty, path);
-  dispatch(dirtyAction(isDirty, path));
-};
+export const setDirty =
+  (isDirty: boolean, path: string) =>
+  (dispatch: Dispatch): void => {
+    persistIsDirty(isDirty, path);
+    dispatch(dirtyAction(isDirty, path));
+  };
 
-export const setSelectedDescriptionItemIndex = (itemIndex: number) => (dispatch: Dispatch): void => {
-  dispatch({ type: "SET_SELECTED_DESCRIPTION_ITEM_INDEX", itemIndex });
-};
+export const setSelectedDescriptionItemIndex =
+  (itemIndex: number) =>
+  (dispatch: Dispatch): void => {
+    dispatch({ type: "SET_SELECTED_DESCRIPTION_ITEM_INDEX", itemIndex });
+  };
 
-export const setSelectedTableId = (tableId: number) => (dispatch: Dispatch): void => {
-  dispatch({ type: "SET_SELECTED_TABLE_ID", tableId });
-};
+export const setSelectedTableId =
+  (tableId: number) =>
+  (dispatch: Dispatch): void => {
+    dispatch({ type: "SET_SELECTED_TABLE_ID", tableId });
+  };
 
+export const setSelectedTableCellId =
+  (cellId: number) =>
+  (dispatch: Dispatch): void => {
+    dispatch({ type: "SET_SELECTED_TABLE_CELL_ID", cellId });
 
-export const setSelectedTableCellId = (cellId: number) => (dispatch: Dispatch): void => {
-  dispatch({ type: "SET_SELECTED_TABLE_CELL_ID", cellId });
-
-  if (!!cellId) {
-    dispatch(setSelectedListItemId(null));
-  }
-};
+    if (!!cellId) {
+      dispatch(setSelectedListItemId(null));
+    }
+  };
 
 export const addNewTableRow = (): OrgAction => ({
   type: "ADD_NEW_TABLE_ROW",
@@ -545,7 +616,10 @@ export const moveTableColumnRight = (): OrgAction => ({
   dirtying: true,
 });
 
-export const updateTableCellValue = (cellId: number, newValue: string): OrgAction => ({
+export const updateTableCellValue = (
+  cellId: number,
+  newValue: string,
+): OrgAction => ({
   type: "UPDATE_TABLE_CELL_VALUE",
   cellId,
   newValue,
@@ -553,7 +627,8 @@ export const updateTableCellValue = (cellId: number, newValue: string): OrgActio
 });
 
 export const insertCapture =
-  (templateId: number, content: string, shouldPrepend: boolean) => (dispatch: Dispatch, getState): void => {
+  (templateId: number, content: string, shouldPrepend: boolean) =>
+  (dispatch: Dispatch, getState): void => {
     dispatch(closePopup());
 
     const template = getState()
@@ -573,69 +648,73 @@ export const clearPendingCapture = (): OrgAction => ({
   type: "CLEAR_PENDING_CAPTURE",
 });
 
-export const insertPendingCapture = () => (dispatch: Dispatch, getState): void => {
-  const path = getState().org.present.get("path");
-  const pendingCapture = getState().org.present.get("pendingCapture");
-  const templateName = pendingCapture.get("captureTemplateName");
-  const captureContent = pendingCapture.get("captureContent");
-  const customCaptureVariables = pendingCapture.get("customCaptureVariables");
+export const insertPendingCapture =
+  () =>
+  (dispatch: Dispatch, getState): void => {
+    const path = getState().org.present.get("path");
+    const pendingCapture = getState().org.present.get("pendingCapture");
+    const templateName = pendingCapture.get("captureTemplateName");
+    const captureContent = pendingCapture.get("captureContent");
+    const customCaptureVariables = pendingCapture.get("customCaptureVariables");
 
-  dispatch(clearPendingCapture());
-  window.history.pushState({}, "", window.location.pathname);
+    dispatch(clearPendingCapture());
+    window.history.pushState({}, "", window.location.pathname);
 
-  const template = getState()
-    .capture.get("captureTemplates")
-    .filter(
-      (template: string) =>
-        template.get("isAvailableInAllOrgFiles") ||
-        template
-          .get("orgFilesWhereAvailable")
-          .includes(getState().org.present.get("path")),
-    )
-    .find(
-      (template: string): boolean => template.get("description").trim() === templateName.trim(),
+    const template = getState()
+      .capture.get("captureTemplates")
+      .filter(
+        (template: string) =>
+          template.get("isAvailableInAllOrgFiles") ||
+          template
+            .get("orgFilesWhereAvailable")
+            .includes(getState().org.present.get("path")),
+      )
+      .find(
+        (template: string): boolean =>
+          template.get("description").trim() === templateName.trim(),
+      );
+    if (!template) {
+      dispatch(
+        setDisappearingLoadingMessage(
+          `Capture failed: "${templateName}" template not found or not available in this file`,
+          8000,
+        ),
+      );
+      return;
+    }
+
+    const targetHeader = headerWithPath(
+      getState().org.present.getIn(["files", path, "headers"]),
+      template.get("headerPaths"),
     );
-  if (!template) {
+    if (!targetHeader) {
+      dispatch(
+        setDisappearingLoadingMessage(
+          `Capture failed: "${template.get("description")}" header path invalid in this file`,
+          8000,
+        ),
+      );
+      return;
+    }
+
+    const [substitutedTemplate, initialCursorIndex] =
+      substituteTemplateVariables(
+        template.get("template"),
+        customCaptureVariables,
+      );
+
+    const content = !!initialCursorIndex
+      ? `${substitutedTemplate.substring(
+          0,
+          initialCursorIndex,
+        )}${captureContent}${substitutedTemplate.substring(initialCursorIndex)}`
+      : `${substitutedTemplate}${captureContent}`;
+
     dispatch(
-      setDisappearingLoadingMessage(
-        `Capture failed: "${templateName}" template not found or not available in this file`,
-        8000,
-      ),
+      insertCapture(template.get("id"), content, template.get("shouldPrepend")),
     );
-    return;
-  }
-
-  const targetHeader = headerWithPath(
-    getState().org.present.getIn(["files", path, "headers"]),
-    template.get("headerPaths"),
-  );
-  if (!targetHeader) {
-    dispatch(
-      setDisappearingLoadingMessage(
-        `Capture failed: "${template.get("description")}" header path invalid in this file`,
-        8000,
-      ),
-    );
-    return;
-  }
-
-  const [substitutedTemplate, initialCursorIndex] = substituteTemplateVariables(
-    template.get("template"),
-    customCaptureVariables,
-  );
-
-  const content = !!initialCursorIndex
-    ? `${substitutedTemplate.substring(
-        0,
-        initialCursorIndex,
-      )}${captureContent}${substitutedTemplate.substring(initialCursorIndex)}`
-    : `${substitutedTemplate}${captureContent}`;
-
-  dispatch(
-    insertCapture(template.get("id"), content, template.get("shouldPrepend")),
-  );
-  dispatch(sync({ successMessage: "Item captured" }));
-};
+    dispatch(sync({ successMessage: "Item captured" }));
+  };
 
 export const advanceCheckboxState = (listItemId: number): OrgAction => ({
   type: "ADVANCE_CHECKBOX_STATE",
@@ -643,23 +722,31 @@ export const advanceCheckboxState = (listItemId: number): OrgAction => ({
   dirtying: true,
 });
 
-export const setSelectedListItemId = (listItemId: number) => (dispatch: Dispatch): void => {
-  dispatch({ type: "SET_SELECTED_LIST_ITEM_ID", listItemId });
+export const setSelectedListItemId =
+  (listItemId: number) =>
+  (dispatch: Dispatch): void => {
+    dispatch({ type: "SET_SELECTED_LIST_ITEM_ID", listItemId });
 
-  if (!!listItemId) {
-    dispatch(selectHeader(null));
-    dispatch(setSelectedTableCellId(null));
-  }
-};
+    if (!!listItemId) {
+      dispatch(selectHeader(null));
+      dispatch(setSelectedTableCellId(null));
+    }
+  };
 
-export const updateListTitleValue = (listItemId: number, newValue: string): OrgAction => ({
+export const updateListTitleValue = (
+  listItemId: number,
+  newValue: string,
+): OrgAction => ({
   type: "UPDATE_LIST_TITLE_VALUE",
   listItemId,
   newValue,
   dirtying: true,
 });
 
-export const updateListContentsValue = (listItemId: number, newValue: string): OrgAction => ({
+export const updateListContentsValue = (
+  listItemId: number,
+  newValue: string,
+): OrgAction => ({
   type: "UPDATE_LIST_CONTENTS_VALUE",
   listItemId,
   newValue,
@@ -675,11 +762,13 @@ export const selectNextSiblingListItem = (): OrgAction => ({
   type: "SELECT_NEXT_SIBLING_LIST_ITEM",
 });
 
-export const addNewListItemAndEdit = () => (dispatch: Dispatch): void => {
-  dispatch(addNewListItem());
-  dispatch(selectNextSiblingListItem());
-  dispatch(enterEditMode("list-title"));
-};
+export const addNewListItemAndEdit =
+  () =>
+  (dispatch: Dispatch): void => {
+    dispatch(addNewListItem());
+    dispatch(selectNextSiblingListItem());
+    dispatch(enterEditMode("list-title"));
+  };
 
 export const removeListItem = (): OrgAction => ({
   type: "REMOVE_LIST_ITEM",
@@ -716,7 +805,10 @@ export const moveListSubtreeRight = (): OrgAction => ({
   dirtying: true,
 });
 
-export const setHeaderTags = (headerId: number, tags: Array<string>): OrgAction => ({
+export const setHeaderTags = (
+  headerId: number,
+  tags: Array<string>,
+): OrgAction => ({
   type: "SET_HEADER_TAGS",
   headerId,
   tags,
@@ -731,7 +823,17 @@ export const reorderTags = (fromIndex: number, toIndex: number): OrgAction => ({
 });
 
 export const reorderPropertyList =
-  (fromIndex: number, toIndex: number) => (dispatch: Dispatch, getState): { type: string; fromIndex: number; toIndex: number; headerId: number; dirtying: boolean; } =>
+  (fromIndex: number, toIndex: number) =>
+  (
+    dispatch: Dispatch,
+    getState,
+  ): {
+    type: string;
+    fromIndex: number;
+    toIndex: number;
+    headerId: number;
+    dirtying: boolean;
+  } =>
     dispatch({
       type: "REORDER_PROPERTY_LIST",
       fromIndex,
@@ -747,7 +849,10 @@ export const reorderPropertyList =
  * @param {*} newTimestamp the new value for the timestamp;
  *                         must have the form: {id:, type:, firstTimestamp:, secondTimestamp:}.
  */
-export const updateTimestampWithId = (timestampId: number, newTimestamp: OrgTimestampPart): OrgAction => ({
+export const updateTimestampWithId = (
+  timestampId: number,
+  newTimestamp: OrgTimestampPart,
+): OrgAction => ({
   type: "UPDATE_TIMESTAMP_WITH_ID",
   timestampId,
   newTimestamp,
@@ -766,7 +871,10 @@ export const updatePlanningItemTimestamp = (
   dirtying: true,
 });
 
-export const addNewPlanningItem = (headerId: number, planningType: PlanningType): OrgAction => ({
+export const addNewPlanningItem = (
+  headerId: number,
+  planningType: PlanningType,
+): OrgAction => ({
   type: "ADD_NEW_PLANNING_ITEM",
   headerId,
   planningType,
@@ -774,21 +882,30 @@ export const addNewPlanningItem = (headerId: number, planningType: PlanningType)
   timestamp: new Date(),
 });
 
-export const removePlanningItem = (headerId: number, planningItemIndex: number): OrgAction => ({
+export const removePlanningItem = (
+  headerId: number,
+  planningItemIndex: number,
+): OrgAction => ({
   type: "REMOVE_PLANNING_ITEM",
   headerId,
   planningItemIndex,
   dirtying: true,
 });
 
-export const removeTimestamp = (headerId: number, timestampId: number): OrgAction => ({
+export const removeTimestamp = (
+  headerId: number,
+  timestampId: number,
+): OrgAction => ({
   type: "REMOVE_TIMESTAMP",
   headerId,
   timestampId,
   dirtying: true,
 });
 
-export const updatePropertyListItems = (headerId: number, newPropertyListItems: Array<string>): OrgAction => ({
+export const updatePropertyListItems = (
+  headerId: number,
+  newPropertyListItems: Array<string>,
+): OrgAction => ({
   type: "UPDATE_PROPERTY_LIST_ITEMS",
   headerId,
   newPropertyListItems,
@@ -800,7 +917,11 @@ export const setOrgFileErrorMessage = (message: string): OrgAction => ({
   message,
 });
 
-export const setLogEntryStop = (headerId: number, entryId: number, time: Date): OrgAction => ({
+export const setLogEntryStop = (
+  headerId: number,
+  entryId: number,
+  time: Date,
+): OrgAction => ({
   type: "SET_LOG_ENTRY_STOP",
   headerId,
   entryId,
@@ -808,7 +929,10 @@ export const setLogEntryStop = (headerId: number, entryId: number, time: Date): 
   dirtying: true,
 });
 
-export const createLogEntryStart = (headerId: number, time: Date): OrgAction => ({
+export const createLogEntryStart = (
+  headerId: number,
+  time: Date,
+): OrgAction => ({
   type: "CREATE_LOG_ENTRY_START",
   headerId,
   time,
@@ -830,7 +954,7 @@ export const updateLogEntryTime = (
 });
 
 export const setSearchFilterInformation = (
-  searchFilter: string ,
+  searchFilter: string,
   cursorPosition: number,
   context: Context,
 ): OrgAction => ({
@@ -856,7 +980,10 @@ export const updateFileSettingFieldPathValue = (
   newValue,
 });
 
-export const reorderFileSetting = (fromIndex: number, toIndex: number): OrgAction => ({
+export const reorderFileSetting = (
+  fromIndex: number,
+  toIndex: number,
+): OrgAction => ({
   type: "REORDER_FILE_SETTING",
   fromIndex,
   toIndex,
@@ -867,21 +994,31 @@ export const deleteFileSetting = (settingId: number): OrgAction => ({
   settingId,
 });
 
-export const addNewEmptyFileSetting = () => (dispatch: Dispatch): { type: string; } =>
-  dispatch({ type: "ADD_NEW_EMPTY_FILE_SETTING" });
+export const addNewEmptyFileSetting =
+  () =>
+  (dispatch: Dispatch): { type: string } =>
+    dispatch({ type: "ADD_NEW_EMPTY_FILE_SETTING" });
 
-export const restoreFileSettings = (newSettings: Record<string, string>): OrgAction => ({
+export const restoreFileSettings = (
+  newSettings: Record<string, string>,
+): OrgAction => ({
   type: "RESTORE_FILE_SETTINGS",
   newSettings,
 });
 
-export const saveBookmark = (context: Context, bookmark: string): OrgAction => ({
+export const saveBookmark = (
+  context: Context,
+  bookmark: string,
+): OrgAction => ({
   type: "SAVE_BOOKMARK",
   context,
   bookmark,
 });
 
-export const deleteBookmark = (context: Context, bookmark: string): OrgAction => ({
+export const deleteBookmark = (
+  context: Context,
+  bookmark: string,
+): OrgAction => ({
   type: "DELETE_BOOKMARK",
   context,
   bookmark,

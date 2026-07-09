@@ -1,13 +1,15 @@
-import { List, Map, fromJS } from "immutable";
+import { List, Map, fromJS, type MapOf } from "immutable";
 import { range } from "lodash";
-import { curry } from "lodash/fp";
+import { curry, partialRight, repeat } from "lodash/fp";
 import { formatDistanceToNow } from "date-fns";
-
+import type { OrgTableCell } from "../types";
 import generateId from "./id_generator";
 import { attributedStringToRawText } from "./export_org";
 import substituteTemplateVariables from "./capture_template_substitution";
 
 export const STATIC_FILE_PREFIX = "org-everywhere_internal_";
+
+export const createHeadingStars = partialRight(repeat, ["*"]);
 
 export const indexAndHeaderWithId = (headers, headerId) => {
   const headerIndex = indexOfHeaderWithId(headers, headerId);
@@ -698,18 +700,18 @@ export const newEmptyTableRowLikeRows = (rows) =>
       ),
     );
 
-export const newEmptyTableCell = () =>
-  fromJS({
+export const newEmptyTableCell = (): MapOf<OrgTableCell> =>
+  Map({
     id: generateId(),
-    contents: [],
+    contents: List(),
     rawContents: "",
   });
 
-export const newListPart = () =>
+export const newListPart = (): MapOf<OrgList> =>
   fromJS({
     type: "list",
     id: generateId(),
-    items: [],
+    items: List(),
     bulletCharacter: "-",
     numberTerminatorCharacter: null,
     isOrdered: false,

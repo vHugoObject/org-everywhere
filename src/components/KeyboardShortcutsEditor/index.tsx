@@ -1,7 +1,7 @@
 import React from "react";
 import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
-import type { Dispatch } from 'redux'
+import type { Dispatch } from "redux";
 import { withRouter } from "react-router-dom";
 
 import { Map } from "immutable";

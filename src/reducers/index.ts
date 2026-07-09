@@ -1,4 +1,4 @@
-import type { Dispatch } from 'redux'
+import type { Dispatch } from "redux";
 import { combineReducers } from "redux";
 import undoable, {
   includeAction,

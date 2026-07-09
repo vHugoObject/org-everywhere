@@ -1,35 +1,55 @@
 import { Map, List, type MapOf } from "immutable";
-import type { OrgCaptureAction, OrgCaptureUpdateAction, OrgCaptureTemplate, ReorderOrgCaptureTemplateAction, RestoreOrgCaptureAction, UpdateOrgCaptureAction, OrgCaptureState } from "../types"
+import type {
+  OrgCaptureAction,
+  OrgCaptureUpdateAction,
+  OrgCaptureTemplate,
+  ReorderOrgCaptureTemplateAction,
+  RestoreOrgCaptureAction,
+  UpdateOrgCaptureAction,
+  OrgCaptureState,
+} from "../types";
 import generateId from "../lib/id_generator";
 import { applyCaptureSettingsFromConfig } from "../util/settings_persister";
 
-const indexOfTemplateWithId = (templates: List<MapOf<OrgCaptureTemplate>>, templateId: number): MapOf<OrgCaptureTemplate> | undefined =>
-  templates.findIndex((template: MapOf<OrgCaptureTemplate>) => template.get("id") === templateId);
+const indexOfTemplateWithId = (
+  templates: List<MapOf<OrgCaptureTemplate>>,
+  templateId: number,
+): MapOf<OrgCaptureTemplate> | undefined =>
+  templates.findIndex(
+    (template: MapOf<OrgCaptureTemplate>) => template.get("id") === templateId,
+  );
 
 const addNewEmptyCaptureTemplate = (state: MapOf<OrgCaptureState>) => {
   if (!state.get("captureTemplates")) {
     state = state.set("captureTemplates", List());
   }
 
-  return state.update("captureTemplates", (templates: List<MapOf<OrgCaptureTemplate>>): List<MapOf<OrgCaptureTemplate>> =>
-    templates.push(
-      Map({
-        id: generateId(),
-        description: "",
-        letter: "",
-        iconName: "",
-        isAvailableInAllOrgFiles: true,
-        file: "",
-        orgFilesWhereAvailable: List([""]),
-        headerPaths: List([""]),
-        shouldPrepend: false,
-        template: "",
-      }),
-    ),
+  return state.update(
+    "captureTemplates",
+    (
+      templates: List<MapOf<OrgCaptureTemplate>>,
+    ): List<MapOf<OrgCaptureTemplate>> =>
+      templates.push(
+        Map({
+          id: generateId(),
+          description: "",
+          letter: "",
+          iconName: "",
+          isAvailableInAllOrgFiles: true,
+          file: "",
+          orgFilesWhereAvailable: List([""]),
+          headerPaths: List([""]),
+          shouldPrepend: false,
+          template: "",
+        }),
+      ),
   );
 };
 
-const updateTemplateFieldPathValue = (state: MapOf<OrgCaptureState>, action: UpdateOrgCaptureAction): MapOf<OrgCaptureState> => {
+const updateTemplateFieldPathValue = (
+  state: MapOf<OrgCaptureState>,
+  action: UpdateOrgCaptureAction,
+): MapOf<OrgCaptureState> => {
   const templateIndex = indexOfTemplateWithId(
     state.get("captureTemplates"),
     action.templateId,
@@ -41,7 +61,10 @@ const updateTemplateFieldPathValue = (state: MapOf<OrgCaptureState>, action: Upd
   );
 };
 
-const addNewTemplateOrgFileAvailability = (state: MapOf<OrgCaptureState>, action: OrgCaptureUpdateAction): MapOf<OrgCaptureState> => {
+const addNewTemplateOrgFileAvailability = (
+  state: MapOf<OrgCaptureState>,
+  action: OrgCaptureUpdateAction,
+): MapOf<OrgCaptureState> => {
   const templateIndex = indexOfTemplateWithId(
     state.get("captureTemplates"),
     action.templateId,
@@ -53,7 +76,10 @@ const addNewTemplateOrgFileAvailability = (state: MapOf<OrgCaptureState>, action
   );
 };
 
-const removeTemplateOrgFileAvailability = (state: MapOf<OrgCaptureState>, action: OrgCaptureUpdateAction): MapOf<OrgCaptureState> => {
+const removeTemplateOrgFileAvailability = (
+  state: MapOf<OrgCaptureState>,
+  action: OrgCaptureUpdateAction,
+): MapOf<OrgCaptureState> => {
   const templateIndex = indexOfTemplateWithId(
     state.get("captureTemplates"),
     action.templateId,
@@ -61,11 +87,15 @@ const removeTemplateOrgFileAvailability = (state: MapOf<OrgCaptureState>, action
 
   return state.updateIn(
     ["captureTemplates", templateIndex, "orgFilesWhereAvailable"],
-    (orgFiles: List<string>): List<string> => orgFiles.delete(action.orgFileAvailabilityIndex),
+    (orgFiles: List<string>): List<string> =>
+      orgFiles.delete(action.orgFileAvailabilityIndex),
   );
 };
 
-const addNewTemplateHeaderPath = (state: MapOf<OrgCaptureState>, action: OrgCaptureUpdateAction): MapOf<OrgCaptureState> => {
+const addNewTemplateHeaderPath = (
+  state: MapOf<OrgCaptureState>,
+  action: OrgCaptureUpdateAction,
+): MapOf<OrgCaptureState> => {
   const templateIndex = indexOfTemplateWithId(
     state.get("captureTemplates"),
     action.templateId,
@@ -77,7 +107,10 @@ const addNewTemplateHeaderPath = (state: MapOf<OrgCaptureState>, action: OrgCapt
   );
 };
 
-const removeTemplateHeaderPath = (state: MapOf<OrgCaptureState>, action: OrgCaptureUpdateAction): MapOf<OrgCaptureState> => {
+const removeTemplateHeaderPath = (
+  state: MapOf<OrgCaptureState>,
+  action: OrgCaptureUpdateAction,
+): MapOf<OrgCaptureState> => {
   const templateIndex = indexOfTemplateWithId(
     state.get("captureTemplates"),
     action.templateId,
@@ -85,11 +118,15 @@ const removeTemplateHeaderPath = (state: MapOf<OrgCaptureState>, action: OrgCapt
 
   return state.updateIn(
     ["captureTemplates", templateIndex, "headerPaths"],
-    (headerPaths: List<string>): List<string> => headerPaths.delete(action.headerPathIndex),
+    (headerPaths: List<string>): List<string> =>
+      headerPaths.delete(action.headerPathIndex),
   );
 };
 
-const deleteTemplate = (state: MapOf<OrgCaptureState>, action: OrgCaptureUpdateAction): MapOf<OrgCaptureState> => {
+const deleteTemplate = (
+  state: MapOf<OrgCaptureState>,
+  action: OrgCaptureUpdateAction,
+): MapOf<OrgCaptureState> => {
   const templateIndex = indexOfTemplateWithId(
     state.get("captureTemplates"),
     action.templateId,
@@ -100,7 +137,10 @@ const deleteTemplate = (state: MapOf<OrgCaptureState>, action: OrgCaptureUpdateA
   );
 };
 
-const restoreCaptureSettings = (state: MapOf<OrgCaptureState>, action: RestoreOrgCaptureAction): MapOf<OrgCaptureState> => {
+const restoreCaptureSettings = (
+  state: MapOf<OrgCaptureState>,
+  action: RestoreOrgCaptureAction,
+): MapOf<OrgCaptureState> => {
   if (!action.newSettings) {
     return state;
   }
@@ -108,15 +148,20 @@ const restoreCaptureSettings = (state: MapOf<OrgCaptureState>, action: RestoreOr
   return applyCaptureSettingsFromConfig(state, action.newSettings);
 };
 
-
-const reorderCaptureTemplate = (state: MapOf<OrgCaptureState>, action: ReorderOrgCaptureTemplateAction): MapOf<OrgCaptureState> =>
+const reorderCaptureTemplate = (
+  state: MapOf<OrgCaptureState>,
+  action: ReorderOrgCaptureTemplateAction,
+): MapOf<OrgCaptureState> =>
   state.update("captureTemplates", (templates) =>
     templates
       .splice(action.fromIndex, 1)
       .splice(action.toIndex, 0, templates.get(action.fromIndex)),
   );
 
-export default (state: MapOf<OrgCaptureState> = Map({} as OrgCaptureState), action: OrgCaptureAction): MapOf<OrgCaptureState> => {
+export default (
+  state: MapOf<OrgCaptureState> = Map({} as OrgCaptureState),
+  action: OrgCaptureAction,
+): MapOf<OrgCaptureState> => {
   switch (action.type) {
     case "ADD_NEW_EMPTY_CAPTURE_TEMPLATE":
       return addNewEmptyCaptureTemplate(state, action);

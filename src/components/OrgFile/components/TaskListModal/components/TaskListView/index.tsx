@@ -1,7 +1,7 @@
 import React, { Fragment, useEffect } from "react";
 import { bindActionCreators } from "redux";
 import { connect } from "react-redux";
-import type { Dispatch } from 'redux'
+import type { Dispatch } from "redux";
 import { List, Map } from "immutable";
 
 import * as orgActions from "../../../../../../actions/org";

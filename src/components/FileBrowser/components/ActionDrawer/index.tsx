@@ -3,7 +3,7 @@
 
 import React, { Fragment } from "react";
 import { connect } from "react-redux";
-import type { Dispatch } from 'redux'
+import type { Dispatch } from "redux";
 import { bindActionCreators } from "redux";
 import { includes } from "lodash/fp";
 import { List } from "immutable";

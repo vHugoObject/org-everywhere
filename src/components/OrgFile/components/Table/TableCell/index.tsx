@@ -69,7 +69,7 @@ const TableCell = ({
 
   const handleCellSelect = () => {
     setIsCellSelected(true);
-    tableCellRef.current?.focus()
+    tableCellRef.current?.focus();
     dispatch(setSelectedTableCellId(cellId));
   };
 

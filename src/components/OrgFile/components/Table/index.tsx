@@ -10,8 +10,8 @@ interface TableProps {
   tableContainerRef: RefObject<null | HTMLTableElement>;
 }
 
-const MINROWSIZEPERCENTAGE: number = 0.03
-const MINROWSIZEHEIGHT: number = 30
+const MINROWSIZEPERCENTAGE: number = 0.03;
+const MINROWSIZEHEIGHT: number = 30;
 
 const Table = ({
   props: {
@@ -24,12 +24,15 @@ const Table = ({
 }: {
   props: TableProps;
 }) => {
-
   const rowHeightScaledToContainer: number = tableContainerRef?.current
-    ? parseInt(getComputedStyle(tableContainerRef?.current).height) * MINROWSIZEPERCENTAGE
+    ? parseInt(getComputedStyle(tableContainerRef?.current).height) *
+      MINROWSIZEPERCENTAGE
     : 0;
 
-  const height: number = rowHeightScaledToContainer < MINROWSIZEHEIGHT ? MINROWSIZEHEIGHT : rowHeightScaledToContainer;
+  const height: number =
+    rowHeightScaledToContainer < MINROWSIZEHEIGHT
+      ? MINROWSIZEHEIGHT
+      : rowHeightScaledToContainer;
 
   return (
     <table className="table-part">

@@ -3,9 +3,44 @@ import {
   hasActiveClock,
   updateHeadersTotalTimeLoggedRecursive,
 } from "./clocking";
-
-import { fromJS, List } from "immutable";
-import { last, range, times, flatten, takeWhile } from "lodash/fp";
+import { fromJS, List, Map } from "immutable";
+import type { MapOf } from "immutable";
+import {
+  last,
+  range,
+  times,
+  flatten,
+  takeWhile,
+  pipe,
+  split,
+  first,
+  property,
+  size,
+  set,
+  trim,
+  trimEnd,
+  endsWith,
+} from "lodash/fp";
+import type {
+  OrgTimestampPart,
+  OrgSimpleToken,
+  OrgRecursiveToken,
+  OrgMarkupType,
+  OrgElement,
+  OrgLink,
+  OrgTable,
+  OrgTableCell,
+  OrgTodoKeywordSet,
+  OrgFileConfig,
+  OrgList,
+  OrgListItem,
+  OrgRawTableToken,
+  OrgRawListContentToken,
+  OrgRawListHeaderToken,
+  OrgTimestampElement,
+  OrgPropertyListItem,
+} from "../types";
+import { ORGCHECKBOXSTATEMAPPING } from "./constants";
 
 // TODO: Extract all match groups of `beginningRegexp` (for example
 // like `emailRegexp`), so that they can be documented and are less
@@ -66,11 +101,43 @@ const markupAndCookieRegex = new RegExp(
   "g",
 );
 
+const LIST_HEADER_REGEX = /^\s*([-+*]|(\d+(\.|\)))) (.*)/;
+
+const asStrNoSlashs = (regex: RegExp) => {
+  const s = regex.toString();
+  return s.substring(1, s.length - 1);
+};
+
+const concatRegexes = (...regexes) =>
+  regexes.reduce((prev, curr) =>
+    RegExp(asStrNoSlashs(prev) + asStrNoSlashs(curr)),
+  );
+
+const optionalSinglePlanningItemRegex = RegExp(
+  `((DEADLINE|SCHEDULED|CLOSED):\\s*${asStrNoSlashs(timestampRegex)})?`,
+);
+
+// If there are any planning items, consume not more
+// than one newline after the last planning item.
+const planningRegex = concatRegexes(
+  /^\s*/,
+  optionalSinglePlanningItemRegex,
+  /[ \t]*/,
+  optionalSinglePlanningItemRegex,
+  /[ \t]*/,
+  optionalSinglePlanningItemRegex,
+  /[ \t]*\n?/,
+);
+const planningRegexCaptureGroupsOfType = [2, 21, 40]; // depends on timestampRegex
+
 // INFO: https://www.debuggex.com/ is a good tool to inspect how the
 // matches work.
 // console.log(markupAndCookieRegex);
 
-const timestampFromRegexMatch = (match, partIndices) => {
+const timestampFromRegexMatch = (
+  match: RegExpExecArray | RegExpMatchArray,
+  partIndices: Array<number>,
+): OrgTimestamp | null => {
   const [
     typeBracket,
     year,
@@ -89,9 +156,11 @@ const timestampFromRegexMatch = (match, partIndices) => {
     secondDelayRepeatUnit,
     secondRepeaterDeadlineValue,
     secondRepeaterDeadlineUnit,
-  ] = partIndices.map((partIndex) => match[partIndex]);
+  ] = partIndices.map(
+    (partIndex: number): string | undefined => match[partIndex],
+  );
 
-  if (!year) {
+  if (!year || !month || !day) {
     return null;
   }
 
@@ -105,24 +174,36 @@ const timestampFromRegexMatch = (match, partIndices) => {
     repeaterDeadlineUnit;
   let delayType, delayValue, delayUnit;
 
-  if (["+", "++", ".+"].includes(firstDelayRepeatType)) {
+  if (
+    firstDelayRepeatType &&
+    ["+", "++", ".+"].includes(firstDelayRepeatType)
+  ) {
     repeaterType = firstDelayRepeatType;
     repeaterValue = firstDelayRepeatValue;
     repeaterUnit = firstDelayRepeatUnit;
     repeaterDeadlineValue = firstRepeaterDeadlineValue;
     repeaterDeadlineUnit = firstRepeaterDeadlineUnit;
-  } else if (["-", "--"].includes(firstDelayRepeatType)) {
+  } else if (
+    firstDelayRepeatType &&
+    ["-", "--"].includes(firstDelayRepeatType)
+  ) {
     delayType = firstDelayRepeatType;
     delayValue = firstDelayRepeatValue;
     delayUnit = firstDelayRepeatUnit;
   }
-  if (["+", "++", ".+"].includes(secondDelayRepeatType)) {
+  if (
+    secondDelayRepeatType &&
+    ["+", "++", ".+"].includes(secondDelayRepeatType)
+  ) {
     repeaterType = secondDelayRepeatType;
     repeaterValue = secondDelayRepeatValue;
     repeaterUnit = secondDelayRepeatUnit;
     repeaterDeadlineValue = secondRepeaterDeadlineValue;
     repeaterDeadlineUnit = secondRepeaterDeadlineUnit;
-  } else if (["-", "--"].includes(secondDelayRepeatType)) {
+  } else if (
+    secondDelayRepeatType &&
+    ["-", "--"].includes(secondDelayRepeatType)
+  ) {
     delayType = secondDelayRepeatType;
     delayValue = secondDelayRepeatValue;
     delayUnit = secondDelayRepeatUnit;
@@ -149,12 +230,26 @@ const timestampFromRegexMatch = (match, partIndices) => {
   };
 };
 
+export const ORGMARKUPMAPPING: Record<string, OrgMarkupType> = {
+  "~": "inline-code",
+  "*": "bold",
+  "/": "italic",
+  "+": "strikethrough",
+  _: "underline",
+  "=": "verbatim",
+};
+
+export const getMarkupType = (string: string): OrgMarkupType | undefined =>
+  property(string, ORGMARKUPMAPPING);
+
 export const parseMarkupAndCookies = (
-  rawText,
-  { shouldAppendNewline = false } = {},
-) => {
-  const matches = [];
-  let match = markupAndCookieRegex.exec(rawText);
+  rawText: string,
+  {
+    shouldAppendNewline = false,
+  }: { shouldAppendNewline?: boolean; excludeCookies?: boolean } = {},
+): Array<OrgElement> => {
+  const matches: Array<OrgSimpleToken> = [];
+  let match: RegExpExecArray | null = markupAndCookieRegex.exec(rawText);
   while (match) {
     if (!!match[2]) {
       matches.push({
@@ -173,29 +268,28 @@ export const parseMarkupAndCookies = (
       });
     } else if (!!match[7]) {
       const percentCookieMatch = match[7].match(/(\d*)%/);
+      const percentage: string | undefined =
+        (percentCookieMatch && percentCookieMatch[0]) || undefined;
       matches.push({
         type: "percentage-cookie",
         rawText: match[0],
-        percentage: percentCookieMatch[1],
+        percentage,
         index: match.index,
       });
     } else if (!!match[8]) {
       const fractionCookieMatch = match[8].match(/(\d*)\/(\d*)/);
+      const numerator: string | undefined =
+        (fractionCookieMatch && fractionCookieMatch[0]) || undefined;
+      const denominator: string | undefined =
+        (fractionCookieMatch && fractionCookieMatch[0]) || undefined;
       matches.push({
         type: "fraction-cookie",
         rawText: match[0],
-        fraction: [fractionCookieMatch[1], fractionCookieMatch[2]],
+        fraction: [numerator, denominator],
         index: match.index,
       });
     } else if (!!match[11]) {
-      const markupType = {
-        "~": "inline-code",
-        "*": "bold",
-        "/": "italic",
-        "+": "strikethrough",
-        _: "underline",
-        "=": "verbatim",
-      }[match[11]];
+      const markupType = getMarkupType(match[11]);
 
       const markupPrefixLength = match[10].length;
 
@@ -248,14 +342,14 @@ export const parseMarkupAndCookies = (
     match = markupAndCookieRegex.exec(rawText);
   }
 
-  const lineParts = [];
+  const lineParts: Array<OrgElement> = [];
   let startIndex = 0;
-  matches.forEach((match) => {
-    let index = match.index;
+  matches.forEach((match: OrgSimpleToken): void => {
+    let index: number = match.index;
 
     // Get the part before the first match:
     if (index !== startIndex) {
-      const text = rawText.substring(startIndex, index);
+      const text: string = rawText.substring(startIndex, index);
       lineParts.push({
         type: "text",
         contents: text,
@@ -263,14 +357,14 @@ export const parseMarkupAndCookies = (
     }
 
     // Get this match:
-    const part = computeParseResults(rawText, match);
+    const part: Org = computeParseResults(rawText, match);
     lineParts.push(part);
 
     startIndex = match.index + match.rawText.length;
   });
 
   if (startIndex !== rawText.length || shouldAppendNewline) {
-    const trailingText =
+    const trailingText: string =
       rawText.substring(startIndex, rawText.length) +
       (shouldAppendNewline ? "\n" : "");
     lineParts.push({
@@ -282,20 +376,18 @@ export const parseMarkupAndCookies = (
   return lineParts;
 };
 
-const computeParseResults = (rawText, match) => {
+const computeParseResults = (rawText: string, match: OrgSimpleToken): Org => {
   switch (match.type) {
     case "link":
-      const linkPart = {
+      const linkPart: OrgLink = {
         id: generateId(),
         type: "link",
         contents: {
           uri: match.uri,
         },
       };
-      if (match.title) {
-        linkPart.contents.title = match.title;
-      }
-      return linkPart;
+
+      return match.title ? set("title", match.title, linkPart) : linkPart;
     case "percentage-cookie":
       return {
         id: generateId(),
@@ -338,7 +430,7 @@ const computeParseResults = (rawText, match) => {
   }
 };
 
-const parseTable = (tableLines) => {
+const parseTable = (tableLines: Array<string>): OrgTable => {
   const table = {
     id: generateId(),
     type: "table",
@@ -346,37 +438,37 @@ const parseTable = (tableLines) => {
     columnProperties: [],
   };
 
-  tableLines
-    .map((line) => line.trim())
-    .forEach((line) => {
-      if (line.startsWith("|-")) {
-        table.contents.push([]);
-      } else {
-        const lastRow = last(table.contents);
-        const lineCells = line.substr(1, line.length - 2).split("|");
+  tableLines.map(trim).forEach((line: string) => {
+    if (line.startsWith("|-")) {
+      table.contents.push([]);
+    } else {
+      const lastRow = last(table.contents);
+      const lineCells = line.substr(1, line.length - 2).split("|");
 
-        if (lastRow.length === 0) {
-          lineCells.forEach((cell) => lastRow.push(cell));
-        } else {
-          lineCells.forEach((cellContents, cellIndex) => {
-            lastRow[cellIndex] += `\n${cellContents}`;
-          });
-        }
+      if (lastRow?.length === 0) {
+        lineCells.forEach((cell) => lastRow.push(cell));
+      } else {
+        lineCells.forEach((cellContents, cellIndex) => {
+          lastRow[cellIndex] += `\n${cellContents}`;
+        });
       }
-    });
+    }
+  });
 
   // Parse the contents of each cell.
   table.contents = table.contents.map((row) => ({
     id: generateId(),
-    contents: row.map((rawContents) => ({
+    type: "table-row",
+    contents: row.map((rawContents: string) => ({
       id: generateId(),
+      type: "table-cell",
       contents: parseMarkupAndCookies(rawContents, { excludeCookies: true }),
       rawContents,
     })),
   }));
 
   // We sometimes end up with an extra, empty row - remove it if so.
-  if (last(table.contents).contents.length === 0) {
+  if (last(table.contents)?.contents?.length === 0) {
     table.contents = table.contents.slice(0, table.contents.length - 1);
   }
 
@@ -402,65 +494,67 @@ const parseTable = (tableLines) => {
 };
 
 export const parseRawText = (
-  rawText,
-  { excludeContentElements = false } = {},
+  rawText: string,
+  { excludeContents = false } = {},
 ) => {
-  const lines = rawText.split("\n");
+  const lines: Array<string> = rawText.split("\n");
 
-  const LIST_HEADER_REGEX = /^\s*([-+*]|(\d+(\.|\)))) (.*)/;
+  let currentListHeaderNestingLevel: number | null = null;
+  const processRawLineParts = (
+    line: string,
+    lineIndex: number,
+  ): Array<OrgRecursiveToken> | Array<OrgElement> => {
+    const numLeadingSpaces = line.match(/^( *)/)[0].length;
+    if (
+      currentListHeaderNestingLevel !== null &&
+      (numLeadingSpaces > currentListHeaderNestingLevel || !line.trim())
+    ) {
+      return [
+        {
+          type: "raw-list-content",
+          line,
+        },
+      ];
+    } else {
+      currentListHeaderNestingLevel = null;
 
-  let currentListHeaderNestingLevel = null;
-  const rawLineParts = flatten(
-    lines.map((line: string, lineIndex: number) => {
-      const numLeadingSpaces = line.match(/^( *)/)[0].length;
+      if (line.match(LIST_HEADER_REGEX) && !excludeContents) {
+        currentListHeaderNestingLevel = numLeadingSpaces;
 
-      if (
-        currentListHeaderNestingLevel !== null &&
-        (numLeadingSpaces > currentListHeaderNestingLevel || !line.trim())
-      ) {
         return [
           {
-            type: "raw-list-content",
+            type: "raw-list-header",
+            line,
+          },
+        ];
+      } else if (line.trim().startsWith("|") && !excludeContents) {
+        return [
+          {
+            type: "raw-table",
             line,
           },
         ];
       } else {
-        currentListHeaderNestingLevel = null;
-
-        if (line.match(LIST_HEADER_REGEX) && !excludeContentElements) {
-          currentListHeaderNestingLevel = numLeadingSpaces;
-
-          return [
-            {
-              type: "raw-list-header",
-              line,
-            },
-          ];
-        } else if (line.trim().startsWith("|") && !excludeContentElements) {
-          return [
-            {
-              type: "raw-table",
-              line,
-            },
-          ];
-        } else {
-          return parseMarkupAndCookies(line, {
-            shouldAppendNewline: lineIndex !== lines.length - 1,
-            excludeCookies: true,
-          });
-        }
+        return parseMarkupAndCookies(line, {
+          shouldAppendNewline: lineIndex !== lines.length - 1,
+          excludeCookies: true,
+        });
       }
-    }),
+    }
+  };
+  const rawLineParts: Array<OrgRecursiveToken> | Array<OrgElement> = flatten(
+    lines.map(processRawLineParts),
   );
 
-  const processedLineParts = [];
+  const processedLineParts: Array<OrgElement> = [];
   for (let partIndex = 0; partIndex < rawLineParts.length; ++partIndex) {
     const linePart = rawLineParts[partIndex];
-    if (linePart.type === "raw-table") {
+    if (linePart.type && linePart.type === "raw-table") {
       const tableLines = takeWhile(
-        (part) => part.type === "raw-table",
+        (part: OrgRecursiveToken): part is OrgRawTableToken =>
+          part.type === "raw-table",
         rawLineParts.slice(partIndex),
-      ).map((part) => part.line);
+      ).map((part: OrgRawTableToken): string => part.line);
 
       processedLineParts.push(parseTable(tableLines));
 
@@ -468,10 +562,11 @@ export const parseRawText = (
     } else if (linePart.type === "raw-list-header") {
       const numLeadingSpaces = linePart.line.match(/^( *)/)[0].length;
       const contentLines = takeWhile(
-        (part) => part.type === "raw-list-content",
+        (part: OrgRecursiveToken): part is OrgRawTableToken =>
+          part.type === "raw-list-content",
         rawLineParts.slice(partIndex + 1),
       )
-        .map((part) => part.line)
+        .map((part: OrgRawListContentToken) => part.line)
         .map((line) =>
           line.startsWith(" ".repeat(numLeadingSpaces + 2))
             ? line.substr(numLeadingSpaces + 2)
@@ -484,7 +579,7 @@ export const parseRawText = (
 
       partIndex += contentLines.length;
 
-      const isOrdered = !!linePart.line.match(/^\s*\d+[.)]/);
+      const isOrdered: boolean = !!linePart.line.match(/^\s*\d+[.)]/);
 
       // Remove the leading -, +, *, or number characters.
       let line = linePart.line.match(LIST_HEADER_REGEX)[4];
@@ -499,16 +594,12 @@ export const parseRawText = (
       const isCheckbox = !!line.match(/^\s*\[[ X-]\]/);
       if (isCheckbox) {
         const stateCharacter = line.match(/^\s*\[([ X-])\]/)[1];
-        checkboxState = {
-          " ": "unchecked",
-          X: "checked",
-          "-": "partial",
-        }[stateCharacter];
+        checkboxState = ORGCHECKBOXSTATEMAPPING[stateCharacter];
 
         line = line.replace(/^\s*\[[ X-]\]\s*/, "");
       }
 
-      const newListItem = {
+      const newListItem: OrgListItem = {
         id: generateId(),
         titleLine: parseMarkupAndCookies(line),
         contents,
@@ -521,7 +612,7 @@ export const parseRawText = (
       if (lastIndex >= 0 && processedLineParts[lastIndex].type === "list") {
         processedLineParts[lastIndex].items.push(newListItem);
       } else {
-        processedLineParts.push({
+        const parsedList: OrgList = {
           type: "list",
           id: generateId(),
           items: [newListItem],
@@ -530,7 +621,8 @@ export const parseRawText = (
             ? linePart.line.match(/\s*\d+([.)])/)[1]
             : null,
           isOrdered,
-        });
+        };
+        processedLineParts.push(parsedList);
       }
     } else {
       processedLineParts.push(linePart);
@@ -540,46 +632,35 @@ export const parseRawText = (
   return fromJS(processedLineParts);
 };
 
-export const _parsePlanningItems = (rawText) => {
-  const optionalSinglePlanningItemRegex = RegExp(
-    `((DEADLINE|SCHEDULED|CLOSED):\\s*${asStrNoSlashs(timestampRegex)})?`,
-  );
-
-  // If there are any planning items, consume not more
-  // than one newline after the last planning item.
-  const planningRegex = concatRegexes(
-    /^\s*/,
-    optionalSinglePlanningItemRegex,
-    /[ \t]*/,
-    optionalSinglePlanningItemRegex,
-    /[ \t]*/,
-    optionalSinglePlanningItemRegex,
-    /[ \t]*\n?/,
-  );
-  const planningRegexCaptureGroupsOfType = [2, 21, 40]; // depends on timestampRegex
-  const planningMatch = rawText.match(planningRegex);
+export const _parsePlanningItems = (
+  rawText: string,
+): {
+  planningItems: List<MapOf<OrgTimestamp>>;
+  strippedDescription: string;
+} => {
+  const planningMatch: RegExpMatchArray | null = rawText.match(planningRegex);
 
   const planningItems = fromJS(
     planningRegexCaptureGroupsOfType
-      .map((planningTypeIndex) => {
-        const type = planningMatch[planningTypeIndex];
+      .map((planningTypeIndex: number): null | MapOf<OrgTimestamp> => {
+        const type = planningMatch && planningMatch[planningTypeIndex];
         if (!type) {
           return null;
         }
 
-        const timestamp = timestampFromRegexMatch(
+        const timestamp: OrgTimestamp | null = timestampFromRegexMatch(
           planningMatch,
           range(planningTypeIndex + 1, planningTypeIndex + 1 + 17),
         );
-
-        return createOrUpdateTimestamp({ type, timestamp });
+        if (timestamp) return createOrUpdateTimestamp({ type, timestamp });
+        return null;
       })
       .filter((item) => !!item),
   );
 
   if (planningItems.size === 0) {
     // If there are no matches for planning items, return the original rawText.
-    return { planningItems: fromJS([]), strippedDescription: rawText };
+    return { planningItems: List(), strippedDescription: rawText };
   } else {
     const remainingDescriptionWithoutPlanningItem = rawText.replace(
       planningRegex,
@@ -592,15 +673,36 @@ export const _parsePlanningItems = (rawText) => {
   }
 };
 
-const createOrUpdateTimestamp = ({ type, timestamp, id }) =>
-  fromJS({ type, timestamp, id: id || generateId() });
+const createOrUpdateTimestamp = ({
+  type,
+  timestamp,
+  id,
+}: {
+  type: string;
+  timestamp: OrgTimestamp;
+  id?: number;
+}): MapOf<OrgTimestamp> => {
+  const orgTimestamp: OrgTimestamp = {
+    type: "timestamp",
+    timestamp: Map(timestamp),
+    id: id || generateId(),
+  };
+  return Map(orgTimestamp);
+};
 
-const parsePropertyList = (rawText) => {
-  const lines = rawText.split("\n");
-  const propertiesLineIndex = lines.findIndex(
-    (line) => line.trim() === ":PROPERTIES:",
+const parsePropertyList = (
+  rawText: string,
+): {
+  propertyListItems: List<MapOf<OrgPropertyListItem>>;
+  strippedDescription: string;
+} => {
+  const lines: Array<string> = rawText.split("\n");
+  const propertiesLineIndex: number = lines.findIndex(
+    (line: string): boolean => line.trim() === ":PROPERTIES:",
   );
-  const endLineIndex = lines.findIndex((line) => line.trim() === ":END:");
+  const endLineIndex: number = lines.findIndex(
+    (line: string): boolean => line.trim() === ":END:",
+  );
 
   if (
     propertiesLineIndex === -1 ||
@@ -616,8 +718,9 @@ const parsePropertyList = (rawText) => {
   const propertyListItems = fromJS(
     lines
       .slice(propertiesLineIndex + 1, endLineIndex)
-      .map((line) => {
-        const match = line.match(/:([^\s]*):(?: (.*))?/);
+      .map((line): OrgPropertyListItem | null => {
+        const match: RegExpMatchArray | null =
+          line.match(/:([^\s]*):(?: (.*))?/);
         if (!match) {
           return null;
         }
@@ -625,7 +728,9 @@ const parsePropertyList = (rawText) => {
         // Parse the properties value even though most values would
         // not need parsing. Only timestamps are interactive, the rest
         // will be saved as plain text.
-        let value = !!match[2] ? parseMarkupAndCookies(match[2]) : null;
+        let value: Array<OrgElement> | null = !!match[2]
+          ? parseMarkupAndCookies(match[2])
+          : null;
 
         if (value && value[0].type !== "timestamp") {
           value = [{ contents: match[2], type: "text" }];
@@ -700,7 +805,7 @@ const parseLogbook = (rawText) => {
   };
 };
 
-export const _parseLogNotes = (rawText) => {
+export const _parseLogNotes = (rawText: string) => {
   // Only parse log notes if a logbook exists. Otherwise, a list - log notes
   // or just a normal list - will go into the description.
   const lines = rawText.split("\n");
@@ -715,7 +820,7 @@ export const _parseLogNotes = (rawText) => {
   return makeLogNotesResult([], [rawText]);
 };
 
-export const parseDescriptionPrefixElements = (rawText) => {
+export const parseDescriptionPrefixs = (rawText: string) => {
   const planningItemsParse = _parsePlanningItems(rawText);
 
   const planningItems = planningItemsParse.planningItems;
@@ -747,7 +852,7 @@ export const _updateHeaderFromDescription = (
     logNotes,
     logBookEntries,
     strippedDescription,
-  } = parseDescriptionPrefixElements(rawUnstrippedDescription);
+  } = parseDescriptionPrefixs(rawUnstrippedDescription);
   const parsedDescription = parseRawText(strippedDescription);
 
   const parsedTitle = header.getIn(["titleLine", "title"]);
@@ -776,7 +881,7 @@ export const _updateHeaderFromDescription = (
     .set("logBookEntries", logBookEntries);
 };
 
-const defaultKeywordSets = fromJS([
+const defaultKeywordSets: List<MapOf<OrgTodoKeywordSet>> = fromJS([
   {
     keywords: ["TODO", "DONE"],
     completedKeywords: ["DONE"],
@@ -784,35 +889,42 @@ const defaultKeywordSets = fromJS([
   },
 ]);
 
-export const parseTitleLine = (titleLine, todoKeywordSets) => {
+export const parseTitleLine = (
+  titleLine: string,
+  todoKeywordSets: List<MapOf<OrgTodoKeywordSet>>,
+) => {
   const allKeywords = todoKeywordSets.flatMap((todoKeywordSet) => {
     return todoKeywordSet.get("keywords");
   });
-  const todoKeyword = allKeywords
+  const todoKeyword: string | undefined = allKeywords
     .filter((keyword) => titleLine.startsWith(keyword + " "))
     .first();
-  let rawTitle = titleLine;
+  let rawTitle: string = titleLine;
   if (todoKeyword) {
-    rawTitle = rawTitle.substr(todoKeyword.length + 1);
+    rawTitle = rawTitle.substring(todoKeyword.length + 1);
   }
 
   // Check for tags.
-  let tags = [];
-  if (rawTitle.trimRight().endsWith(":")) {
-    const titleParts = rawTitle.trimRight().split(" ");
+  let tags: Array<string> = [];
+  if (pipe([trimEnd, endsWith(":")])(rawTitle)) {
+    const titleParts = pipe([trimEnd, split(" ")])(rawTitle);
     const possibleTags = titleParts[titleParts.length - 1];
     if (/^:[^\s]+:$/.test(possibleTags)) {
-      rawTitle = rawTitle.substr(0, rawTitle.length - possibleTags.length);
+      rawTitle = rawTitle.slice(0, rawTitle.length - possibleTags.length);
       tags = possibleTags.split(":").filter((tag) => tag !== "");
     }
   }
 
   const title = parseMarkupAndCookies(rawTitle);
-
-  return fromJS({ title, rawTitle, todoKeyword, tags });
+  const newTitleLine = { title, rawTitle, todoKeyword, tags };
+  return fromJS(newTitleLine);
 };
 
-export const newHeaderWithTitle = (line, nestingLevel, todoKeywordSets) => {
+export const newHeaderWithTitle = (
+  line: string,
+  nestingLevel: number,
+  todoKeywordSets = defaultKeywordSets,
+) => {
   if (todoKeywordSets.size === 0) {
     todoKeywordSets = defaultKeywordSets;
   }
@@ -832,18 +944,12 @@ export const newHeaderWithTitle = (line, nestingLevel, todoKeywordSets) => {
   });
 };
 
-const concatRegexes = (...regexes) =>
-  regexes.reduce((prev, curr) =>
-    RegExp(asStrNoSlashs(prev) + asStrNoSlashs(curr)),
-  );
-
 // Converts RegExp or strings like '/regex/' to a string without these slashes.
-const asStrNoSlashs = (regex) => {
-  const s = regex.toString();
-  return s.substring(1, s.length - 1);
-};
 
-export const newHeaderFromText = (rawText, todoKeywordSets) => {
+export const newHeaderFromText = (
+  rawText: string,
+  todoKeywordSets: List<MapOf<OrgTodoKeywordSet>>,
+) => {
   // This function is currently only used for capture templates.
   // Hence, it's acceptable that it is opinionated on treating
   // whitespace.
@@ -856,7 +962,7 @@ export const newHeaderFromText = (rawText, todoKeywordSets) => {
   return _updateHeaderFromDescription(newHeader, descriptionText);
 };
 
-export const lineIsTodoKeywordConfig = (line) => {
+export const lineIsTodoKeywordConfig = (line: string): boolean => {
   const lowerLine = line.toLowerCase();
   return (
     lowerLine.startsWith("#+todo: ") ||
@@ -865,36 +971,38 @@ export const lineIsTodoKeywordConfig = (line) => {
   );
 };
 
-export const parseTodoKeywordConfig = (line) => {
+export const parseTodoKeywordConfig = (line: string) => {
   if (!lineIsTodoKeywordConfig(line)) {
     return null;
   }
 
-  const keywordsString = line.substr(line.indexOf(":") + 2);
-  const keywordTokens = keywordsString.split(/\s/);
-  const keywords = keywordTokens
-    .filter((keyword) => keyword !== "|")
+  const keywordsString: string = line.substring(line.indexOf(":") + 2);
+  const keywordTokens: Array<string> = keywordsString.split(/\s/);
+  const keywords: Array<string> = keywordTokens
+    .filter((keyword: string) => keyword !== "|")
     // Remove fast access TODO states suffix from keyword, because
     // there's no UI to handle those in org-everywhere
     // https://orgmode.org/manual/Fast-access-to-TODO-states.html#Fast-access-to-TODO-states
-    .map((keyword) => keyword.replace(/\(.[!@]?(\/[!@])?\)$/, ""));
+    .map((keyword: string) => keyword.replace(/\(.[!@]?(\/[!@])?\)$/, ""));
 
-  const pipeIndex = keywordTokens.indexOf("|");
-  const completedKeywords = pipeIndex >= 0 ? keywords.slice(pipeIndex) : [];
-
-  return fromJS({
+  const pipeIndex: number = keywordTokens.indexOf("|");
+  const completedKeywords: Array<string> =
+    pipeIndex >= 0 ? keywords.slice(pipeIndex) : [];
+  const todoKeywordConfig: OrgTodoKeywordSet = {
     keywords,
     completedKeywords,
     configLine: line,
     default: false,
-  });
+  };
+
+  return fromJS(todoKeywordConfig);
 };
 
-export const parseFileConfig = (lines) => {
+export const parseFileConfig = (lines: Array<string>): OrgFileConfig => {
   let todoKeywordSets = List();
   let fileConfigLines = List();
 
-  lines.forEach((line) => {
+  lines.forEach((line: string) => {
     const newKeywordSet = parseTodoKeywordConfig(line);
     if (newKeywordSet) {
       todoKeywordSets = todoKeywordSets.push(newKeywordSet);
@@ -913,7 +1021,7 @@ export const parseFileConfig = (lines) => {
   };
 };
 
-export const parseOrg = (fileContents) => {
+export const parseOrg = (fileContents: string) => {
   let headers = List();
   const lines = getLinesFromFileContents(fileContents);
 
@@ -975,7 +1083,7 @@ const extractActiveTimestampsForPlanningItemsFromParse = (type, parsedData) => {
   // planningItems only accept a single timestamp -> ignore second timestamp
   return parsedData
     .filter(
-      (x) =>
+      (x: MapOf<OrgSimpleToken>) =>
         x.get("type") === "timestamp" &&
         x.getIn(["firstTimestamp", "isActive"]),
     )
@@ -1018,17 +1126,13 @@ export const updatePlanningItemsFromHeader = (header) => {
   return items;
 };
 
-const computeNestingLevel = (titleLineWithAsterisk) => {
-  const nestingLevel = titleLineWithAsterisk.indexOf(" ");
-  if (nestingLevel === -1) return titleLineWithAsterisk.trimRight().length;
-  return nestingLevel;
-};
+export const computeNestingLevel = pipe([split(" "), first, size]);
 
-const getLinesFromFileContents = (fileContents) => {
+const getLinesFromFileContents = (fileContents: string): Array<string> => {
   // We expect a newline at EOF (from the last line of fileContents).
   // After split(), this results in an empty string at the last position of the
   // array => Remove that last array item.
-  const lines = fileContents.split("\n");
+  const lines: Array<string> = fileContents.split("\n");
 
   // Special case when last line did not end with a newline character:
   if (lines.length > 0 && lines[lines.length - 1] !== "") return lines;
@@ -1036,7 +1140,10 @@ const getLinesFromFileContents = (fileContents) => {
   return lines.slice(0, lines.length - 1);
 };
 
-const makeLogNotesResult = (logNotesLines, strippedDescriptionLines) => {
+const makeLogNotesResult = (
+  logNotesLines: Array<string>,
+  strippedDescriptionLines: Array<string>,
+) => {
   const rawLogNotes = logNotesLines.join("\n");
   return {
     rawLogNotes: rawLogNotes,

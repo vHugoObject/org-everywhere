@@ -2683,7 +2683,7 @@ export const noLogRepeatEnabledP = ({ state, headerIndex }) => {
           v.get("contents").match(/\s*nologrepeat\s*/),
       ))
   );
-}
+};
 
 /**
  * Function wrapper around `updateCookiesOfHeaderWithId` and

@@ -1,8 +1,13 @@
-import type { Dispatch } from 'redux';
-import { ModalPage, PopupType } from "src/types.ts";
+import type { Dispatch } from "redux";
+import type { ModalPage, PopupType } from "../types.ts";
 import sampleContent from "../../sample.org?raw";
 import { STATIC_FILE_PREFIX } from "../lib/org_utils";
-import type { AgendaTimeframe, BaseAction, DelayUnit, FinderTab } from "../types";
+import type {
+  AgendaTimeframe,
+  BaseAction,
+  DelayUnit,
+  FinderTab,
+} from "../types";
 import { parseFile, resetFileDisplay, setPath } from "./org";
 
 export const setLoadingMessage = (loadingMessage: string): BaseAction => ({
@@ -26,7 +31,8 @@ export const setIsOnline = (online: boolean): BaseAction => ({
 });
 
 export const setDisappearingLoadingMessage =
-  (loadingMessage: string, delay: number) => (dispatch: Dispatch): void => {
+  (loadingMessage: string, delay: number) =>
+  (dispatch: Dispatch): void => {
     dispatch(setLoadingMessage(loadingMessage));
     setTimeout(() => dispatch(hideLoadingMessage()), delay);
   };
@@ -36,7 +42,10 @@ export const setLastViewedFile = (lastViewedPath: string): BaseAction => ({
   lastViewedPath,
 });
 
-export const restoreStaticFile = (staticFile: string, lastViewedFilePath: string) => {
+export const restoreStaticFile = (
+  staticFile: string,
+  lastViewedFilePath: string,
+) => {
   return (dispatch: Dispatch): void => {
     dispatch(setLastViewedFile(lastViewedFilePath));
 
@@ -44,7 +53,10 @@ export const restoreStaticFile = (staticFile: string, lastViewedFilePath: string
   };
 };
 
-export const unloadStaticFile = (): (dispatch: Dispatch, getState) => void => {
+export const unloadStaticFile = (): ((
+  dispatch: Dispatch,
+  getState,
+) => void) => {
   return (dispatch: Dispatch, getState): void => {
     dispatch(resetFileDisplay());
 
@@ -93,7 +105,9 @@ export const setEditorDescriptionHeightValue = (
   newEditorDescriptionHeightValue,
 });
 
-export const setAgendaStartOnWeekday = (newAgendaStartOnWeekday: boolean): BaseAction => ({
+export const setAgendaStartOnWeekday = (
+  newAgendaStartOnWeekday: boolean,
+): BaseAction => ({
   type: "SET_AGENDA_START_ON_WEEKDAY",
   newAgendaStartOnWeekday,
 });
@@ -103,7 +117,9 @@ export const setShouldLiveSync = (shouldLiveSync: boolean): BaseAction => ({
   shouldLiveSync,
 });
 
-export const setShowDeadlineDisplay = (showDeadlineDisplay: boolean): BaseAction => ({
+export const setShowDeadlineDisplay = (
+  showDeadlineDisplay: boolean,
+): BaseAction => ({
   type: "SET_SHOW_DEADLINE_DISPLAY",
   showDeadlineDisplay,
 });
@@ -115,29 +131,37 @@ export const setShouldSyncOnBecomingVisibile = (
   shouldSyncOnBecomingVisibile,
 });
 
-export const setShouldShowTitleInOrgFile = (shouldShowTitleInOrgFile: boolean): BaseAction => ({
+export const setShouldShowTitleInOrgFile = (
+  shouldShowTitleInOrgFile: boolean,
+): BaseAction => ({
   type: "SET_SHOULD_SHOW_TITLE_IN_ORG_FILE",
   shouldShowTitleInOrgFile,
 });
 
-export const setShouldLogIntoDrawer = (shouldLogIntoDrawer: boolean): BaseAction => ({
+export const setShouldLogIntoDrawer = (
+  shouldLogIntoDrawer: boolean,
+): BaseAction => ({
   type: "SET_SHOULD_LOG_INTO_DRAWER",
   shouldLogIntoDrawer,
 });
 
-export const setCloseSubheadersRecursively = (closeSubheadersRecursively: boolean): BaseAction => ({
+export const setCloseSubheadersRecursively = (
+  closeSubheadersRecursively: boolean,
+): BaseAction => ({
   type: "SET_CLOSE_SUBHEADERS_RECURSIVELY",
   closeSubheadersRecursively,
 });
 
-export const setShouldNotIndentOnExport = (shouldNotIndentOnExport: boolean): BaseAction => ({
+export const setShouldNotIndentOnExport = (
+  shouldNotIndentOnExport: boolean,
+): BaseAction => ({
   type: "SET_SHOULD_NOT_INDENT_ON_EXPORT",
   shouldNotIndentOnExport,
 });
 
 export const setShouldStoreSettingsInSyncBackend = (
   newShouldStoreSettingsInSyncBackend: boolean,
-): (dispatch: Dispatch, getState) => void => {
+): ((dispatch: Dispatch, getState) => void) => {
   return (dispatch: Dispatch, getState): void => {
     dispatch({
       type: "SET_SHOULD_STORE_SETTINGS_IN_SYNC_BACKEND",
@@ -178,13 +202,18 @@ export const setTheme = (theme: string): BaseAction => ({
   theme,
 });
 
-export const setCustomKeybinding = (keybindingName: string, keybinding: string): BaseAction => ({
+export const setCustomKeybinding = (
+  keybindingName: string,
+  keybinding: string,
+): BaseAction => ({
   type: "SET_CUSTOM_KEYBINDING",
   keybindingName,
   keybinding,
 });
 
-export const restoreBaseSettings = (newSettings: Record<string, string>): BaseAction => ({
+export const restoreBaseSettings = (
+  newSettings: Record<string, string>,
+): BaseAction => ({
   type: "RESTORE_BASE_SETTINGS",
   newSettings,
 });
@@ -202,7 +231,10 @@ export const clearModalStack = (): BaseAction => ({
   type: "CLEAR_MODAL_STACK",
 });
 
-export const activatePopup = (popupType: PopupType, data: Record<string, string>): BaseAction => ({
+export const activatePopup = (
+  popupType: PopupType,
+  data: Record<string, string>,
+): BaseAction => ({
   type: "ACTIVATE_POPUP",
   popupType,
   data,
@@ -212,20 +244,26 @@ export const closePopup = (): BaseAction => ({
   type: "CLOSE_POPUP",
 });
 
-export const setAgendaTimeframe = (agendaTimeframe: AgendaTimeframe) => (dispatch: Dispatch): { type: string; agendaTimeframe: AgendaTimeframe; } =>
-  dispatch({
-    type: "SET_AGENDA_TIMEFRAME",
-    agendaTimeframe,
-  });
+export const setAgendaTimeframe =
+  (agendaTimeframe: AgendaTimeframe) =>
+  (dispatch: Dispatch): { type: string; agendaTimeframe: AgendaTimeframe } =>
+    dispatch({
+      type: "SET_AGENDA_TIMEFRAME",
+      agendaTimeframe,
+    });
 
-export const setFinderTab = (finderTab: FinderTab) => (dispatch: Dispatch): { type: string; finderTab: FinderTab; } =>
-  dispatch({
-    type: "SET_FINDER_TAB",
-    finderTab,
-  });
+export const setFinderTab =
+  (finderTab: FinderTab) =>
+  (dispatch: Dispatch): { type: string; finderTab: FinderTab } =>
+    dispatch({
+      type: "SET_FINDER_TAB",
+      finderTab,
+    });
 
-export const setPreferEditRawValues = (preferEditRawValues: boolean) => (dispatch: Dispatch): { type: string; preferEditRawValues: boolean; } =>
-  dispatch({
-    type: "PREFER_EDIT_RAW_VALUES",
-    preferEditRawValues,
-  });
+export const setPreferEditRawValues =
+  (preferEditRawValues: boolean) =>
+  (dispatch: Dispatch): { type: string; preferEditRawValues: boolean } =>
+    dispatch({
+      type: "PREFER_EDIT_RAW_VALUES",
+      preferEditRawValues,
+    });

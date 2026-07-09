@@ -1,6 +1,6 @@
 import React, { PureComponent } from "react";
 import { connect } from "react-redux";
-import type { Dispatch } from 'redux'
+import type { Dispatch } from "redux";
 import { bindActionCreators } from "redux";
 
 import "./stylesheet.css";

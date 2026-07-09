@@ -1,7 +1,7 @@
 import React, { Fragment, useState, useMemo, useRef } from "react";
 import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
-import type { Dispatch } from 'redux'
+import type { Dispatch } from "redux";
 import { Motion, spring } from "react-motion";
 
 import "./stylesheet.css";

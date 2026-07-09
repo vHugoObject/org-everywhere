@@ -1,7 +1,7 @@
 import React from "react";
 import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
-import type { Dispatch } from 'redux'
+import type { Dispatch } from "redux";
 import "./stylesheet.css";
 
 import TabButtons from "../../../UI/TabButtons";
