@@ -322,6 +322,24 @@ export type SyncBackend = {
 };
 
 export type ForceAction = "manual" | "push" | "pull" | null;
+
+export type OrgCaptureTemplate = {
+  id: number,
+  description: string,
+  letter: string,
+  iconName: string,
+  isAvailableInAllOrgFiles: boolean,
+  file: string,
+  orgFilesWhereAvailable: List<string>,
+  headerPaths: List<string>,
+  shouldPrepend: boolean,
+  template: string,
+}
+
+export type OrgCaptureState = {
+  captureTemplates: List<MapOf<OrgCaptureTemplate>>,
+}
+
 export interface SyncOptions {
   forceAction: ForceAction;
   successMessage: string;
@@ -696,15 +714,15 @@ export type OrgAction = {
         type: "ADD_NEW_FILE";
         path: string;
         content: string;
-    };
-export type OrgCaptureAction = {
-        type: "ADD_NEW_EMPTY_CAPTURE_TEMPLATE";
-    } | {
+};
+
+export type UpdateOrgCaptureAction = {
         type: "UPDATE_TEMPLATE_FIELD_PATH_VALUE";
         templateId: number;
         fieldPath: string;
-        newValue: string;
-    } | {
+  newValue: string;
+};
+export type OrgCaptureUpdateAction = {
         type: "ADD_NEW_TEMPLATE_ORG_FILE_AVAILABILITY";
         templateId: number;
     } | {
@@ -720,15 +738,28 @@ export type OrgCaptureAction = {
         headerPathIndex: number;
     } | {
         type: "DELETE_TEMPLATE";
-        templateId: number;
-    } | {
-        type: "RESTORE_CAPTURE_SETTINGS";
-        newSettings: Record<string, string>;
-    } | {
-        type: "REORDER_CAPTURE_TEMPLATE";
-        fromIndex: number;
-        toIndex: number;
+      templateId: number;
+}
+| UpdateOrgCaptureAction;
+
+export type ReorderOrgCaptureTemplateAction = {
+  type: "REORDER_CAPTURE_TEMPLATE";
+  fromIndex: number;
+  toIndex: number;
 };
+
+export type RestoreOrgCaptureAction =  {
+  type: "RESTORE_CAPTURE_SETTINGS";
+  newSettings: Record<string, string>;
+};
+
+export type OrgCaptureAction = {
+  type: "ADD_NEW_EMPTY_CAPTURE_TEMPLATE";
+}
+| RestoreOrgCaptureAction
+| ReorderOrgCaptureTemplateAction
+| OrgCaptureUpdateAction;
+
 
 export type BaseAction = {
         type: "SET_LOADING_MESSAGE";

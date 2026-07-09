@@ -53,6 +53,13 @@ const ACTIONTYPESTOCREATE: Array<[string, string]> = [
   ["./src/actions/sync_backend.ts", "SyncBackendAction"]
 ];
 
+const REDUCERTYPESTOCREATE: Array<[string, string]> = [
+  ["./src/reducers/org.ts", "MapOf<BaseState>"],
+  ["./src/reducers/capture.ts", "MapOf<OrgCaptureState>"],
+  ["./src/reducers/base.ts", "MapOf<OrgState>"],
+  ["./src/reducers/sync_backend.ts", "MapOf<SyncBackendState>"]
+];
+
 const ISBOOLEANTYPEARGS = [
   startsWith("should"),
   startsWith("is"),
@@ -300,16 +307,22 @@ const isActionCreator = (node: FunctionDeclaration | ArrowFunction): boolean => 
 
 const isActionDispatcher = (node: FunctionDeclaration | ArrowFunction): boolean => {
   const params = new Set(node.getParameters().map((node: ParameterDeclaration) => node.getName()))
-
   return params.has("dispatch")
 }
 
-const annotateAllActionCreatorReturnValues = async(filePathTuples = ACTIONTYPESTOCREATE): Promise<void> => {
+const isReduxReducer = (node: FunctionDeclaration | ArrowFunction): boolean => {
+  const params = new Set(node.getParameters().map((node: ParameterDeclaration) => node.getName()))
+  return params.has("state") && params.has("action")
+}
+
+const annotateAllXReturnValues = (filePathTuples: Array<[string, string]>,
+  predicate: (node: FunctionDeclaration | ArrowFunction) => boolean) => async(): Promise<void> => {
+
   const project = new Project({});
   forEach(([filePath, typeName]: [string, string]): void => {
     const sourceFile = project.addSourceFileAtPath(filePath);
     sourceFile.forEachDescendant((descendant: Node): void => {
-      if (Node.isFunctionDeclaration(descendant) || Node.isArrowFunction(descendant) && isActionCreator(descendant)) {
+      if (Node.isFunctionDeclaration(descendant) || Node.isArrowFunction(descendant) && predicate(descendant)) {
 	descendant.setReturnType(typeName)
       }
     })
@@ -514,4 +527,9 @@ const annotateAllFunctionArguments = async(filePaths: Array<string>): Promise<vo
 }
 
 //await annotateAllActionDispatcherReturnValues([["./src/actions/sync_backend.ts", "SyncBackendAction"]])
-await annotateAllFunctionArguments(["./src/actions/org.ts"])
+//await annotateAllFunctionArguments(["./src/actions/org.ts"])
+
+const annotateAllActionCreatorReturnValues = annotateAllXReturnValues(ACTIONTYPESTOCREATE, isActionCreator)
+const annotateAllReducerReturnValues = annotateAllXReturnValues([["./src/reducers/capture.ts", "MapOf<OrgCaptureState>"]], isReduxReducer)
+
+await annotateAllReducerReturnValues()
