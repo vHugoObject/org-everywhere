@@ -1,4 +1,5 @@
-const DEFAULT_BINDINGS = [
+import { Map } from "immutable";
+const DEFAULT_BINDINGS: Array<[string, string, string]> = [
   ["Select next header", "selectNextVisibleHeader", "ctrl+down"],
   ["Select previous header", "selectPreviousVisibleHeader", "ctrl+up"],
   ["Toggle header opened", "toggleHeaderOpened", "tab"],
@@ -15,14 +16,14 @@ const DEFAULT_BINDINGS = [
   ["Undo", "undo", "ctrl+/"],
 ];
 
-export const calculateNamedKeybindings = (customKeybindings) =>
-  DEFAULT_BINDINGS.map(([bindingName, _bindingAction, binding]) => [
+export const calculateNamedKeybindings = (customKeybindings: Map<string, string>) =>
+  DEFAULT_BINDINGS.map(([bindingName, _bindingAction, binding]: [string, string, string]) => [
     bindingName,
     customKeybindings.get(bindingName, binding),
   ]);
 
-export const calculateActionedKeybindings = (customKeybindings) =>
-  DEFAULT_BINDINGS.map(([bindingName, bindingAction, binding]) => [
+export const calculateActionedKeybindings = (customKeybindings: Map<string, string>) =>
+  DEFAULT_BINDINGS.map(([bindingName, bindingAction, binding]: [string, string, string]) => [
     bindingAction,
     customKeybindings.get(bindingName, binding),
   ]);
