@@ -8,7 +8,7 @@ import {
   partialRight,
   zipObject,
 } from "lodash/fp";
-import { themes } from "./constants";
+import { themes } from "./themes";
 
 export const createColorInstance = partialRight(Color, [null]);
 export const convertColorInstanceIntoObject = Function.prototype.call.bind(
