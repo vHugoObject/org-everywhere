@@ -37,8 +37,15 @@ import {
   multiply,
 } from "lodash/fp";
 import { addDays, subDays, addWeeks, addMonths, addYears } from "date-fns/fp";
+import type { ReadonlyNonEmptyArray } from "fp-ts/ReadonlyNonEmptyArray";
 
 export const mapSum = map(sum);
+
+export const floorDivision = curry(
+  (divisor: number, dividend: number): number => {
+    return Math.floor(dividend / divisor);
+  },
+);
 
 export const convertToSet = <T>(collection: Array<T>): Set<T> => {
   return new Set(collection);
@@ -112,6 +119,22 @@ export const unfoldBooleanCountTuplesIntoShuffledArrayOfBooleans = pipe([
   unfoldBooleanCountTuplesIntoArrayOfBooleans,
   shuffle,
 ]);
+
+export const unfoldAndTransformRangeChunkN = curry(
+  <T>(
+    chunkSize: number,
+    transformer: <T>(index: number) => T,
+    [rangeStart, rangeEnd]: [number, number],
+    chunkNumber: number,
+  ): ReadonlyNonEmptyArray<T> => {
+    return pipe([
+      multiply(chunkSize),
+      add(rangeStart),
+      (valueToAdd: number) =>
+        unfold(pipe([add(valueToAdd), transformer]), chunkSize),
+    ])(chunkNumber);
+  },
+);
 
 export const apply = <T>(func: (arg: T) => T, arg: T) => func(arg);
 

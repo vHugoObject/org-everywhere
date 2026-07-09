@@ -27,15 +27,16 @@ import {
   simpleModularArithmetic,
   addOne,
   floorDivision,
-  unfoldAndTransformRangeChunkN
+  unfoldAndTransformRangeChunkN,
 } from "../src/util/transformers";
+import { createHeadingStars } from "../src/lib/org_utils";
 import {
   TESTNONSPACESCHARACTERRANGE,
   DOUBLEBETWEENZEROAND1RANGE,
   TESTINBUFFERSETTINGS,
   TESTORGCAPTURETEMPLATES,
   TESTLOWERALPHACHARACTERRANGE,
-  TESTUPPERALPHACHARACTERRANGE
+  TESTUPPERALPHACHARACTERRANGE,
 } from "./Constants";
 
 export const fcGenerateValidDate = (fcGen: fc.GeneratorValue): Date => {
@@ -250,7 +251,6 @@ export const fcUnfoldRandomNaturalNumberRangeChunk = curry(
   },
 );
 
-
 export const fcNRandomArrayIndicesAsStrings = curry(
   <T>(
     fcGen: fc.GeneratorValue,
@@ -338,7 +338,6 @@ export const fcRandomEvenIntegerInRange = curry(
     return int % 2 == 0 ? int : int + 1;
   },
 );
-
 
 export const fcRandomCharacterGenerator = curry(
   (range: [number, number], fcGen: fc.GeneratorValue): string => {
@@ -505,16 +504,13 @@ export const fcRandomAlphaString = fcCallRandomFCGen([
   fcRandomLengthLowerAlphaStringGenerator,
 ]);
 
-
-
-
-export const fcShuffledSubArrayOfTemplateVariables =
-  fcShuffledSubarray(TESTORGCAPTURETEMPLATES);
+export const fcShuffledSubArrayOfTemplateVariables = fcShuffledSubarray(
+  TESTORGCAPTURETEMPLATES,
+);
 export const fcGenerateCaptureTemplateString = (
   fcGen: fc.GeneratorValue,
 ): string => {
-  const templates: Array<string> =
-    fcShuffledSubArrayOfTemplateVariables(fcGen);
+  const templates: Array<string> = fcShuffledSubArrayOfTemplateVariables(fcGen);
   return join(" ", templates);
 };
 
@@ -523,21 +519,17 @@ export const fcGenerateCaptureTemplateStringWithCursor = pipe([
   (template: string) => `${template} %?`,
 ]);
 
-const createHeadingStars = partialRight(repeat, ["*"]);
-
 export const fcGenerateOrgHeadingAsString = curry(
-  (
-    headingLevel: number,
-    fcGen: fc.GeneratorValue,
-  ): [string, string] => {
+  (headingLevel: number, fcGen: fc.GeneratorValue): [string, string] => {
     const headingStars: string = createHeadingStars(headingLevel);
-    const headingValue: string = fcRandomStringGenerator(fcGen)
+    const headingValue: string = fcRandomStringGenerator(fcGen);
     const heading: string = `${headingStars} ${headingValue}`;
     return [heading, headingValue];
   },
 );
 
-export const fcGenerateRandomOrgHeadingAsString = defaultConvertFCGenIntoRandomGen(fcGenerateOrgHeadingAsString)
+export const fcGenerateRandomOrgHeadingAsString =
+  defaultConvertFCGenIntoRandomGen(fcGenerateOrgHeadingAsString);
 
 export const fcRandomInBufferSetting = partialRight(fcNRandomItemsFromArray, [
   TESTINBUFFERSETTINGS,
