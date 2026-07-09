@@ -1,7 +1,7 @@
 import React, { PureComponent, Fragment } from "react";
 import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
-
+import type { Dispatch } from 'redux'
 import { Redirect } from "react-router-dom";
 
 import { GlobalHotKeys } from "react-hotkeys";
@@ -598,7 +598,7 @@ class OrgFile extends PureComponent {
             headerId={activePopupData.get("headerId")}
             timestamp={editingTimestamp}
             timestampId={activePopupData.get("timestampId")}
-            popupType={activePopupType}
+            npopupType={activePopupType}
             planningItemIndex={activePopupData.get("planningItemIndex")}
             singleTimestampOnly={!activePopupData.get("timestampId")}
             onClose={this.getPopupCloseAction(activePopupType)}
@@ -899,7 +899,7 @@ const mapStateToProps = (state) => {
   };
 };
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = (dispatch: Dispatch) => {
   return {
     base: bindActionCreators(baseActions, dispatch),
     syncBackend: bindActionCreators(syncBackendActions, dispatch),

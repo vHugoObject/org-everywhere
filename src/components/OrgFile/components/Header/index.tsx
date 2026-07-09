@@ -1,7 +1,7 @@
 import React, { PureComponent } from "react";
 import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
-
+import type { Dispatch } from 'redux'
 import { Motion, spring } from "react-motion";
 import { UnmountClosed as Collapse } from "react-collapse";
 import { IconContext } from "react-icons";
@@ -633,7 +633,7 @@ const mapStateToProps = (state, ownProps) => {
   };
 };
 
-const mapDispatchToProps = (dispatch) => ({
+const mapDispatchToProps = (dispatch: Dispatch) => ({
   org: bindActionCreators(orgActions, dispatch),
   base: bindActionCreators(baseActions, dispatch),
 });

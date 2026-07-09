@@ -1,6 +1,7 @@
 import React, { PureComponent, Fragment } from "react";
 import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
+import type { Dispatch } from 'redux'
 import {
   FaRedo,
   FaUndo,
@@ -357,7 +358,7 @@ const mapStateToProps = (state) => {
   };
 };
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = (dispatch: Dispatch) => {
   return {
     base: bindActionCreators(baseActions, dispatch),
     org: bindActionCreators(orgActions, dispatch),

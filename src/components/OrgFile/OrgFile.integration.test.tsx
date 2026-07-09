@@ -9,10 +9,10 @@ import OrgFile from "./";
 import HeaderBar from "../HeaderBar";
 import readFixture from "../../../test_helpers/index";
 import rootReducer from "../../reducers/";
-
 import { setPath, parseFile } from "../../actions/org";
 import { setShouldLogIntoDrawer } from "../../actions/base";
 import { getCurrentTimestampAsText } from "../../lib/timestamps";
+import { convertToSet } from "../../util/transformers";
 import { Map, Set, fromJS, List } from "immutable";
 import { formatDistanceToNow } from "date-fns";
 import { property, pipe, map, over, curry, times } from "lodash/fp";
@@ -648,8 +648,6 @@ describe("Render all views", async () => {
         const editCellButtonId: string = "edit-cell-button";
         const editCellContainerId: string = "edit-cell-container";
 
-        const convertToSet = (collection: Array<T>): Set<T> =>
-          new Set(collection);
         const getTableRows = property(["rows"]);
 
         const getContentOfTableColumn = curry((columnNumber, table) => {

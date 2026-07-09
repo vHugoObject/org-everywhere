@@ -14,10 +14,9 @@ import {
 import "./stylesheet.css";
 
 // These are the default values for textArea according to MDN
+// remove
 const DEFAULTROWSFOREDITCONTAINER: number = 2;
 const DEFAULTCOLSFOREDITCONTAINER: number = 20;
-
-const DEFAULTLINEHEIGHT: number = 1.2;
 
 const getInTableEditMode = curry(
   (filePath, state) =>
@@ -26,6 +25,7 @@ const getInTableEditMode = curry(
 const getSelectedCellId = curry((filePath, state) => {
   return state.org.present.getIn(["files", filePath, "selectedTableCellId"]);
 });
+
 const TableCell = ({
   props: { filePath, headerIndex, descriptionItemIndex, cellId, row, column },
 }) => {
@@ -69,10 +69,11 @@ const TableCell = ({
 
   const handleCellSelect = () => {
     setIsCellSelected(true);
+    tableCellRef.current?.focus()
     dispatch(setSelectedTableCellId(cellId));
   };
 
-  const handleCheckboxClick = (listItemId) => {
+  const handleCheckboxClick = (listItemId: string) => {
     dispatch(advanceCheckboxState(listItemId));
   };
 
@@ -92,6 +93,7 @@ const TableCell = ({
       key={cellId}
       onClick={handleCellSelect}
       ref={tableCellRef}
+      tabIndex={-1}
     >
       {isCellSelected && inTableEditMode ? (
         <TableCellEditContainer

@@ -3,6 +3,7 @@
 
 import React, { Fragment } from "react";
 import { connect } from "react-redux";
+import type { Dispatch } from 'redux'
 import { bindActionCreators } from "redux";
 import { includes } from "lodash/fp";
 import { List } from "immutable";
@@ -23,7 +24,7 @@ interface ActionDrawerProps {
   org: any;
   files: List<MapOf<DirectoryListingEntry>>;
   syncBackend: Client;
-  path: string
+  path: string;
 }
 
 const ActionDrawer = ({ org, files, syncBackend, path }: ActionDrawerProps) => {
@@ -89,7 +90,7 @@ const mapStateToProps = (state) => {
   };
 };
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = (dispatch: Dispatch) => {
   return {
     org: bindActionCreators(orgActions, dispatch),
     syncBackend: bindActionCreators(syncActions, dispatch),

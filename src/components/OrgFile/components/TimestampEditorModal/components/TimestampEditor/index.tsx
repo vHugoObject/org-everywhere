@@ -1,5 +1,6 @@
 import React, { PureComponent, Fragment } from "react";
 import { connect } from "react-redux";
+import type { Dispatch } from 'redux'
 import { bindActionCreators } from "redux";
 import { Map } from "immutable";
 
@@ -441,7 +442,7 @@ const mapStateToProps = (state) => {
   };
 };
 
-const mapDispatchToProps = (dispatch) => ({
+const mapDispatchToProps = (dispatch: Dispatch) => ({
   org: bindActionCreators(orgActions, dispatch),
   base: bindActionCreators(baseActions, dispatch),
 });

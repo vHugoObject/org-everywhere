@@ -1,7 +1,7 @@
 import React, { PureComponent, Fragment } from "react";
 import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
-
+import type { Dispatch } from 'redux'
 import "./stylesheet.css";
 
 import PlanningItems from "./components/PlanningItems";
@@ -265,7 +265,7 @@ const mapStateToProps = (state, ownProps) => {
   };
 };
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = (dispatch: Dispatch) => {
   return {
     org: bindActionCreators(orgActions, dispatch),
     base: bindActionCreators(baseActions, dispatch),

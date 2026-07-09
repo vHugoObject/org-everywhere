@@ -30,7 +30,7 @@ const CellEditContainer = ({
   );
   const [currentCellValue, setCurrentCellValue] = useState(cellValue);
   const [shouldIgnoreBlur, setShouldIgnoreBlur] = useState(false);
-  const textareaRef = useRef(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     if (cellId == selectedCellId) {
@@ -50,23 +50,25 @@ const CellEditContainer = ({
     dispatch(exitEditMode());
   };
 
-  const handleCellChange = (event) => setCurrentCellValue(event.target.value);
+  const handleCellChange = (event: Event) =>
+    setCurrentCellValue(event?.target?.value);
 
+  // needs to be rethought
   const handleInsertTimestamp = () => {
     setShouldIgnoreBlur(true);
-    const insertionIndex = textareaRef.current.selectionStart;
+    const insertionIndex = textareaRef?.current?.selectionStart;
     const newValue =
       currentCellValue.substring(0, insertionIndex) +
       getCurrentTimestampAsText() +
       currentCellValue.substring(
-        textareaRef.current.selectionEnd || insertionIndex,
+        textareaRef?.current?.selectionEnd || insertionIndex,
       );
 
     textareaRef.current.value = newValue;
     setCurrentCellValue(newValue);
 
     setShouldIgnoreBlur(false);
-    textareaRef.current.focus();
+    textareaRef?.current.focus();
   };
 
   const handleTextareaBlur = () => {

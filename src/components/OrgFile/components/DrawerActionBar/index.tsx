@@ -1,7 +1,7 @@
 import React, { PureComponent } from "react";
 import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
-
+import type { Dispatch } from 'redux'
 import { Map } from "immutable";
 
 import * as orgActions from "../../../../actions/org";
@@ -125,7 +125,7 @@ const mapStateToProps = (state) => {
   };
 };
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = (dispatch: Dispatch) => {
   return {
     org: bindActionCreators(orgActions, dispatch),
     base: bindActionCreators(baseActions, dispatch),

@@ -1,12 +1,18 @@
 import React, { useEffect } from "react";
 import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
+import type { Dispatch } from 'redux'
 import { IconContext } from "react-icons";
 import { FaFolder, FaSpinner } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { List } from "immutable";
 import type { MapOf } from "immutable";
-import type { SyncBackend, ClientType, Client, DirectoryListingEntry } from "../../types";
+import type {
+  SyncBackend,
+  ClientType,
+  Client,
+  DirectoryListingEntry,
+} from "../../types";
 import { getIcon } from "../UI/icons";
 
 import ActionDrawer from "./components/ActionDrawer";
@@ -17,7 +23,7 @@ import classNames from "classnames";
 
 import * as syncBackendActions from "../../actions/sync_backend";
 
-const RegularFileIcon = ({ file }: {file: MapOf<DirectoryListingEntry>}) => {
+const RegularFileIcon = ({ file }: { file: MapOf<DirectoryListingEntry> }) => {
   const isBackupFile: boolean = file.get("name").endsWith(".organice-bak");
   const isOrgFile: boolean = file.get("name").endsWith(".org");
   const isSettingsFile: boolean = file.get("name") === ".organice-config.json";
@@ -41,7 +47,11 @@ const RegularFileIcon = ({ file }: {file: MapOf<DirectoryListingEntry>}) => {
   );
 };
 
-const FileDirectoryIcon = ({ file }: {file: MapOf<DirectoryListingEntry>}) => {
+const FileDirectoryIcon = ({
+  file,
+}: {
+  file: MapOf<DirectoryListingEntry>;
+}) => {
   const iconClass: string = classNames(
     "file-browser__file-list__icon fas",
     "file-browser__file-list__icon--directory",
@@ -61,7 +71,7 @@ const FileDirectoryIcon = ({ file }: {file: MapOf<DirectoryListingEntry>}) => {
   );
 };
 
-const FileIcon = ({ file }: {file: MapOf<DirectoryListingEntry>}) => {
+const FileIcon = ({ file }: { file: MapOf<DirectoryListingEntry> }) => {
   return file && file.get("isDirectory") ? (
     <FileDirectoryIcon file={file} />
   ) : (
@@ -75,7 +85,7 @@ interface FileBrowserProps {
   hasMore: boolean;
   isLoadingMore: boolean;
   syncBackendType: ClientType;
-  syncBackend: Client;
+  syncBackend: any;
 }
 
 const FileBrowser = ({
@@ -86,7 +96,9 @@ const FileBrowser = ({
   syncBackendType,
   syncBackend,
 }: FileBrowserProps) => {
-  useEffect(() => {syncBackend.getDirectoryListing(path)}, [syncBackend, path]);
+  useEffect(() => {
+    syncBackend.getDirectoryListing(path);
+  }, [syncBackend, path]);
 
   // is this the problem
   const handleLoadMoreClick = () => syncBackend.loadMoreDirectoryListing();
@@ -134,9 +146,11 @@ const FileBrowser = ({
           </Link>
         )}
 
-        {(listing || []).map((file: MapOf<DirectoryListingEntry>, key: number) => {
-          return <FileIcon key={key} file={file} />;
-        })}
+        {(listing || []).map(
+          (file: MapOf<DirectoryListingEntry>, key: number) => {
+            return <FileIcon key={key} file={file} />;
+          },
+        )}
 
         {hasMore &&
           (isLoadingMore ? (
@@ -185,11 +199,11 @@ const mapStateToProps = (state) => {
   };
 };
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = (dispatch: Dispatch) => {
   return {
     syncBackend: bindActionCreators(syncBackendActions, dispatch),
   };
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(FileBrowser);
-3
+3;

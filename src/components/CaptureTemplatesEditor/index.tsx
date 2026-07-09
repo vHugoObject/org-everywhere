@@ -1,6 +1,7 @@
 import React, { Fragment } from "react";
 import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
+import type { Dispatch } from 'redux'
 import { IconContext } from "react-icons";
 import { FaPlus } from "react-icons/fa";
 import { Droppable } from "react-beautiful-dnd";
@@ -127,7 +128,7 @@ const mapStateToProps = (state) => {
   };
 };
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = (dispatch: Dispatch) => {
   return {
     capture: bindActionCreators(captureActions, dispatch),
   };

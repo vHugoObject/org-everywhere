@@ -1,7 +1,7 @@
 import React from "react";
 import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
-
+import type { Dispatch } from 'redux'
 import "./stylesheet.css";
 
 import TabButtons from "../../../UI/TabButtons";
@@ -84,7 +84,7 @@ const mapStateToProps = (state) => {
   };
 };
 
-const mapDispatchToProps = (dispatch) => ({
+const mapDispatchToProps = (dispatch: Dispatch) => ({
   org: bindActionCreators(orgActions, dispatch),
   base: bindActionCreators(baseActions, dispatch),
 });

@@ -1,7 +1,7 @@
 import React, { Fragment, useState, useMemo, useRef } from "react";
 import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
-
+import type { Dispatch } from 'redux'
 import { Motion, spring } from "react-motion";
 
 import "./stylesheet.css";
@@ -432,7 +432,7 @@ const mapStateToProps = (state) => {
   };
 };
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = (dispatch: Dispatch) => {
   return {
     org: bindActionCreators(orgActions, dispatch),
     capture: bindActionCreators(captureActions, dispatch),
