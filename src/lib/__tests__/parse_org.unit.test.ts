@@ -1,14 +1,6 @@
 /* eslint jest/expect-expect: ["error", { "assertFunctionNames": ["expect", "expectNewSetFromLine", "expectType"] }] */
 import { describe, expect } from "vitest";
-import { test, fc } from '@fast-check/vitest';
-import {
-  parseOrg,
-  parseTodoKeywordConfig,
-  parseRawText,
-  _parsePlanningItems,
-  _parseLogNotes,
-  parseMarkupAndCookies,  
-} from "../parse_org";
+import { test, fc } from "@fast-check/vitest";
 import readFixture from "../../../test_helpers/index";
 import {
   fcRandomStringGenerator,
@@ -16,8 +8,18 @@ import {
   fcGenerateOrgHeadingAsString,
   fcRandomInBufferSetting,
   fcRandomAlphaString,
-  fcGenerateRandomOrgHeadingAsString
+  fcGenerateRandomOrgHeadingAsString,
 } from "../../../test_helpers/TestDataGenerators";
+import { createHeadingStars } from "../org_utils";
+import {
+  parseOrg,
+  parseTodoKeywordConfig,
+  parseRawText,
+  _parsePlanningItems,
+  _parseLogNotes,
+  parseMarkupAndCookies,
+  computeNestingLevel,
+} from "../parse_org";
 
 const expectType = (result) => expect(result.map((x) => x.type));
 const parseFirstHeaderFromOrg = (x) => parseOrg(x).toJS().headers[0];
@@ -33,7 +35,7 @@ function testTimestamp(actual, expected) {
     Object.keys(actual).forEach(
       (key) =>
         Object.prototype.hasOwnProperty.call(expected, key) ||
-          expect(actual[key]).toBeUndefined(),
+        expect(actual[key]).toBeUndefined(),
     );
   }
 }
@@ -50,48 +52,81 @@ function testTimestampText(
   });
 }
 
-
 describe("Test the parser", () => {
+  describe("computeNestingLevel", () => {
+    test.prop([fc.integer({ min: 1, max: 15 }), fc.gen()])(
+      "test with normal headline",
+      (expectedNestingLevel, fcGen) => {
+        const [testHeadline] = fcGenerateOrgHeadingAsString(
+          expectedNestingLevel,
+          fcGen,
+        );
+        expect(computeNestingLevel(testHeadline)).toEqual(expectedNestingLevel);
+      },
+    );
+
+    test.prop([fc.integer({ min: 1, max: 15 })])(
+      "test with stars only",
+      (expectedNestingLevel) => {
+        const testHeadline = createHeadingStars(expectedNestingLevel);
+        expect(computeNestingLevel(testHeadline)).toEqual(expectedNestingLevel);
+      },
+    );
+  });
 
   describe("Parsing inline-markup", () => {
-    test.prop([fc.gen()])('Parses inline-markup where closing delim is followed by ;', (fcGen) => {
-      const testString: string = fcRandomAlphaString(fcGen)
-      const testMarkup = ` *${testString}*;`
-      console.log(testMarkup)
-      const result = parseMarkupAndCookies(testMarkup);
-      expectType(result).toEqual(["text", "inline-markup", "text"]);
-    });
+    test.prop([fc.gen()])(
+      "Parses inline-markup where closing delim is followed by ;",
+      (fcGen) => {
+        const testString: string = fcRandomAlphaString(fcGen);
+        const testMarkup = ` *${testString}*;`;
+        const result = parseMarkupAndCookies(testMarkup);
+        expectType(result).toEqual(["text", "inline-markup", "text"]);
+      },
+    );
   });
 
   describe("Parse an header with empty description", () => {
-    test.prop([fc.gen()])('Parse headline without trailing newline', (fcGen) => {
-      const testString: string = fcRandomStringGenerator(fcGen)
-      const testHeadline: string = `* ${testString}`
-      const result = parseFirstHeaderFromOrg(testHeadline);
-      expect(result.description).toEqual([]);
-      expect(result.rawDescription).toEqual("");
-    });
-    test.prop([fc.gen()])('Parse headline with trailing newline but no description', (fcGen) => {
-      const testHeadline: string = `${fcGenerateRandomOrgHeadingAsString(fcGen)}\n`
-      const result = parseFirstHeaderFromOrg(testHeadline);
-      expect(result.description).toEqual([]);
-      expect(result.rawDescription).toEqual("");
-    });
-    test.prop([fc.gen()])('Parse headline with an empty line of description', (fcGen) => {
-      const testHeadline: string = `${fcGenerateRandomOrgHeadingAsString(fcGen)}\n\n`
-      const result = parseFirstHeaderFromOrg(testHeadline);
-      expect(result.description.length).toEqual(1);
-      expect(result.rawDescription).toEqual("\n");
-    });    
-    test.prop([fc.gen()])('Parse headline directly followed by next headline', (fcGen) => {
-      const [testHeadlineOne, testHeadlineTwo]: Array<string> = fcNLengthUniqueStringArrayGenerator(fcGen, 2)
-      const testHeadlines: string = `* ${testHeadlineOne}\n* ${testHeadlineTwo} 2`
-      const result = parseFirstHeaderFromOrg(testHeadlines);
-      expect(result.description).toEqual([]);
-      expect(result.rawDescription).toEqual("");
-    });
+    test.prop([fc.gen()])(
+      "Parse headline without trailing newline",
+      (fcGen) => {
+        const testString: string = fcRandomStringGenerator(fcGen);
+        const testHeadline: string = `* ${testString}`;
+        const result = parseFirstHeaderFromOrg(testHeadline);
+        expect(result.description).toEqual([]);
+        expect(result.rawDescription).toEqual("");
+      },
+    );
+    test.prop([fc.gen()])(
+      "Parse headline with trailing newline but no description",
+      (fcGen) => {
+        const testHeadline: string = `${fcGenerateRandomOrgHeadingAsString(fcGen)}\n`;
+        const result = parseFirstHeaderFromOrg(testHeadline);
+        expect(result.description).toEqual([]);
+        expect(result.rawDescription).toEqual("");
+      },
+    );
+    test.prop([fc.gen()])(
+      "Parse headline with an empty line of description",
+      (fcGen) => {
+        const testHeadline: string = `${fcGenerateRandomOrgHeadingAsString(fcGen)}\n\n`;
+        const result = parseFirstHeaderFromOrg(testHeadline);
+        expect(result.description.length).toEqual(1);
+        expect(result.rawDescription).toEqual("\n");
+      },
+    );
+    test.prop([fc.gen()])(
+      "Parse headline directly followed by next headline",
+      (fcGen) => {
+        const [testHeadlineOne, testHeadlineTwo]: Array<string> =
+          fcNLengthUniqueStringArrayGenerator(fcGen, 2);
+        const testHeadlines: string = `* ${testHeadlineOne}\n* ${testHeadlineTwo} 2`;
+        const result = parseFirstHeaderFromOrg(testHeadlines);
+        expect(result.description).toEqual([]);
+        expect(result.rawDescription).toEqual("");
+      },
+    );
   });
-
 
   describe("Test parsing of log notes", () => {
     test("Parses notes when followed by logbook", () => {
@@ -112,34 +147,41 @@ describe("Test the parser", () => {
       expect(parseRawText("").toJS()).toEqual([]);
     });
 
-    test.prop([fc.gen()])('Parses simple line', (fcGen) => {
-      const testString: string = fcRandomStringGenerator(fcGen)    
+    test.prop([fc.gen()])("Parses simple line", (fcGen) => {
+      const testString: string = fcRandomAlphaString(fcGen);
       expect(parseRawText(testString).toJS()).toEqual([
-	{ type: "text", contents: testString },
+        { type: "text", contents: testString },
       ]);
     });
-  })
+  });
 
   describe("Parse in-buffer TODO keyword settings", () => {
-    test.prop([fc.gen(), fc.integer({min: 1, max: 15})])('Normal headline', (fcGen, testStarCount) => {
-      const [testHeadline] = fcGenerateOrgHeadingAsString(testStarCount, fcGen)    
-      const result = parseTodoKeywordConfig(testHeadline);
-      expect(result).toBeNull();
-    });
+    test.prop([fc.gen(), fc.integer({ min: 1, max: 15 })])(
+      "Normal headline",
+      (fcGen, testStarCount) => {
+        const [testHeadline] = fcGenerateOrgHeadingAsString(
+          testStarCount,
+          fcGen,
+        );
+        const result = parseTodoKeywordConfig(testHeadline);
+        expect(result).toBeNull();
+      },
+    );
 
-
-    test.prop([fc.gen()])('Normal text line', (fcGen) => {
-      const testString = fcRandomStringGenerator(fcGen)    
+    test.prop([fc.gen()])("Normal text line", (fcGen) => {
+      const testString = fcRandomStringGenerator(fcGen);
       const result = parseTodoKeywordConfig(testString);
       expect(result).toBeNull();
     });
 
-    test.prop([fc.gen()])('Other InBuffer Settings', (fcGen) => {
-      const testInBufferSetting: string = fcRandomInBufferSetting(fcGen)
-	const result = parseTodoKeywordConfig(`#+STARTUP: ${testInBufferSetting}`);
+    test.prop([fc.gen()])("Other InBuffer Settings", (fcGen) => {
+      const testInBufferSetting: string = fcRandomInBufferSetting(fcGen);
+      const result = parseTodoKeywordConfig(
+        `#+STARTUP: ${testInBufferSetting}`,
+      );
       expect(result).toBeNull();
     });
-  })
+  });
 
   // Transition to fast-check later
   describe("Parse headline with planning items and active timestamps", () => {
@@ -152,164 +194,162 @@ describe("Test the parser", () => {
     });
 
     describe("Parse various timestamps", () => {
-
       testTimestampText("<2021-05-16>", {
-	isActive: true,
-	year: "2021",
-	month: "05",
-	day: "16",
+        isActive: true,
+        year: "2021",
+        month: "05",
+        day: "16",
       });
       testTimestampText("[2021-05-16]", {
-	isActive: false,
-	year: "2021",
-	month: "05",
-	day: "16",
+        isActive: false,
+        year: "2021",
+        month: "05",
+        day: "16",
       });
       testTimestampText("<2021-05-16 Sun>", {
-	isActive: true,
-	year: "2021",
-	month: "05",
-	day: "16",
-	dayName: "Sun",
+        isActive: true,
+        year: "2021",
+        month: "05",
+        day: "16",
+        dayName: "Sun",
       });
       testTimestampText("<2021-05-16 Sun 12:45>", {
-	isActive: true,
-	year: "2021",
-	month: "05",
-	day: "16",
-	dayName: "Sun",
-	startHour: "12",
-	startMinute: "45",
+        isActive: true,
+        year: "2021",
+        month: "05",
+        day: "16",
+        dayName: "Sun",
+        startHour: "12",
+        startMinute: "45",
       });
       testTimestampText("<2021-05-16 Sun 12:45-13:15>", {
-	isActive: true,
-	year: "2021",
-	month: "05",
-	day: "16",
-	dayName: "Sun",
-	startHour: "12",
-	startMinute: "45",
-	endHour: "13",
-	endMinute: "15",
+        isActive: true,
+        year: "2021",
+        month: "05",
+        day: "16",
+        dayName: "Sun",
+        startHour: "12",
+        startMinute: "45",
+        endHour: "13",
+        endMinute: "15",
       });
       testTimestampText("<2021-05-16 Sun +1w>", {
-	isActive: true,
-	year: "2021",
-	month: "05",
-	day: "16",
-	dayName: "Sun",
-	repeaterType: "+",
-	repeaterValue: "1",
-	repeaterUnit: "w",
+        isActive: true,
+        year: "2021",
+        month: "05",
+        day: "16",
+        dayName: "Sun",
+        repeaterType: "+",
+        repeaterValue: "1",
+        repeaterUnit: "w",
       });
       testTimestampText("<2021-05-16 Sun .+1w>", {
-	isActive: true,
-	year: "2021",
-	month: "05",
-	day: "16",
-	dayName: "Sun",
-	repeaterType: ".+",
-	repeaterValue: "1",
-	repeaterUnit: "w",
+        isActive: true,
+        year: "2021",
+        month: "05",
+        day: "16",
+        dayName: "Sun",
+        repeaterType: ".+",
+        repeaterValue: "1",
+        repeaterUnit: "w",
       });
       testTimestampText("<2021-05-16 Sun .+2d/4d>", {
-	isActive: true,
-	year: "2021",
-	month: "05",
-	day: "16",
-	dayName: "Sun",
-	repeaterType: ".+",
-	repeaterValue: "2",
-	repeaterUnit: "d",
-	repeaterDeadlineValue: "4",
-	repeaterDeadlineUnit: "d",
+        isActive: true,
+        year: "2021",
+        month: "05",
+        day: "16",
+        dayName: "Sun",
+        repeaterType: ".+",
+        repeaterValue: "2",
+        repeaterUnit: "d",
+        repeaterDeadlineValue: "4",
+        repeaterDeadlineUnit: "d",
       });
       testTimestampText("<2021-05-16 Sun .+1w -2d>", {
-	isActive: true,
-	year: "2021",
-	month: "05",
-	day: "16",
-	dayName: "Sun",
-	repeaterType: ".+",
-	repeaterValue: "1",
-	repeaterUnit: "w",
-	delayType: "-",
-	delayValue: "2",
-	delayUnit: "d",
+        isActive: true,
+        year: "2021",
+        month: "05",
+        day: "16",
+        dayName: "Sun",
+        repeaterType: ".+",
+        repeaterValue: "1",
+        repeaterUnit: "w",
+        delayType: "-",
+        delayValue: "2",
+        delayUnit: "d",
       });
       testTimestampText("<2021-05-16 Sun -2d .+1w>", {
-	isActive: true,
-	year: "2021",
-	month: "05",
-	day: "16",
-	dayName: "Sun",
-	repeaterType: ".+",
-	repeaterValue: "1",
-	repeaterUnit: "w",
-	delayType: "-",
-	delayValue: "2",
-	delayUnit: "d",
+        isActive: true,
+        year: "2021",
+        month: "05",
+        day: "16",
+        dayName: "Sun",
+        repeaterType: ".+",
+        repeaterValue: "1",
+        repeaterUnit: "w",
+        delayType: "-",
+        delayValue: "2",
+        delayUnit: "d",
       });
       testTimestampText(
-	"<2021-05-16>--<2021-05-23>",
-	{ isActive: true, year: "2021", month: "05", day: "16" },
-	{ isActive: true, year: "2021", month: "05", day: "23" },
+        "<2021-05-16>--<2021-05-23>",
+        { isActive: true, year: "2021", month: "05", day: "16" },
+        { isActive: true, year: "2021", month: "05", day: "23" },
       );
     });
   });
 
-  
   ["#+TODO", "#+TYP_TODO"].forEach((t) => {
     describe(t, () => {
       const expectNewSetFromLine = (line: string) => {
-	const result = parseTodoKeywordConfig(line);
-	const expectedNewSet = {
+        const result = parseTodoKeywordConfig(line);
+        const expectedNewSet = {
           completedKeywords: ["FINISHED"],
           configLine: line,
           default: false,
           keywords: ["START", "INPROGRESS", "STALLED", "FINISHED"],
-	};
-	expect(result.toJS()).toEqual(expectedNewSet);
+        };
+        expect(result.toJS()).toEqual(expectedNewSet);
       };
 
       test("no parentheses", () => {
-	const line = `${t}: START INPROGRESS STALLED | FINISHED`;
-	expectNewSetFromLine(line);
+        const line = `${t}: START INPROGRESS STALLED | FINISHED`;
+        expectNewSetFromLine(line);
       });
 
       test("some (x) keyboard shortcuts", () => {
-	const line = `${t}: START INPROGRESS(i) STALLED(.) | FINISHED(f)`;
-	expectNewSetFromLine(line);
+        const line = `${t}: START INPROGRESS(i) STALLED(.) | FINISHED(f)`;
+        expectNewSetFromLine(line);
       });
 
       test("recording timestamp / note on entry", () => {
-	const line = `${t}: START INPROGRESS(!) STALLED | FINISHED(@)`;
-	expectNewSetFromLine(line);
+        const line = `${t}: START INPROGRESS(!) STALLED | FINISHED(@)`;
+        expectNewSetFromLine(line);
       });
 
       test("shortcut plus recording timestamp / note on entry", () => {
-	const line = `${t}: START(s) INPROGRESS(i!) STALLED(.) | FINISHED(f@)`;
-	expectNewSetFromLine(line);
+        const line = `${t}: START(s) INPROGRESS(i!) STALLED(.) | FINISHED(f@)`;
+        expectNewSetFromLine(line);
       });
 
       test("recording timestamp / note on exit", () => {
-	const line = `${t}: START(s) INPROGRESS(/!) STALLED | FINISHED(/@)`;
-	expectNewSetFromLine(line);
+        const line = `${t}: START(s) INPROGRESS(/!) STALLED | FINISHED(/@)`;
+        expectNewSetFromLine(line);
       });
 
       test("shortcut plus recording timestamp / note on exit", () => {
-	const line = `${t}: START(s) INPROGRESS(i/!) STALLED(.) | FINISHED(f/@)`;
-	expectNewSetFromLine(line);
+        const line = `${t}: START(s) INPROGRESS(i/!) STALLED(.) | FINISHED(f/@)`;
+        expectNewSetFromLine(line);
       });
 
       test("recording timestamp / note on entry and exit", () => {
-	const line = `${t}: START(s) INPROGRESS(/!) STALLED | FINISHED(/@)`;
-	expectNewSetFromLine(line);
+        const line = `${t}: START(s) INPROGRESS(/!) STALLED | FINISHED(/@)`;
+        expectNewSetFromLine(line);
       });
 
       test("shortcut plus recording timestamp / note on entry and exit", () => {
-	const line = `${t}: START(s@/@) INPROGRESS(i!/!) STALLED(.@/!) | FINISHED(f!/@)`;
-	expectNewSetFromLine(line);
+        const line = `${t}: START(s@/@) INPROGRESS(i!/!) STALLED(.@/!) | FINISHED(f!/@)`;
+        expectNewSetFromLine(line);
       });
     });
   });
