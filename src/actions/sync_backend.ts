@@ -1,37 +1,39 @@
-import { ActionCreators } from "redux-undo";
 import { addSeconds } from "date-fns";
+import type { MapOf } from "immutable";
+import { List } from "immutable";
 import { get } from "lodash/fp";
 import pathParse from "path-parse";
-import { List } from "immutable";
-import type { MapOf } from "immutable";
-import {
-  setLoadingMessage,
-  hideLoadingMessage,
-  clearModalStack,
-  setIsLoading,
-} from "./base";
-import {
-  parseFile,
-  setDirty,
-  setLastSyncAt,
-  setOrgFileErrorMessage,
-} from "./org";
-import {
-  localStorageAvailable,
-  persistField,
-} from "../util/settings_persister";
+import { Dispatch } from "redux";
+import { ActionCreators } from "redux-undo";
 import { createGitlabOAuth } from "../sync_backend_clients/gitlab_sync_backend_client";
 import type {
-  Client,
-  DirectoryListing,
-  DirectoryListingEntry,
-  AdditionalSyncBackendState,
+    AdditionalSyncBackendState,
+    Client,
+    DirectoryListing,
+    DirectoryListingEntry,
+    SyncBackendAction
 } from "../types";
+import {
+    localStorageAvailable,
+    persistField,
+} from "../util/settings_persister";
+import {
+    clearModalStack,
+    hideLoadingMessage,
+    setIsLoading,
+    setLoadingMessage,
+} from "./base";
+import {
+    parseFile,
+    setDirty,
+    setLastSyncAt,
+    setOrgFileErrorMessage,
+} from "./org";
 
-export const signOut = () => (dispatch, getState) => {
+export const signOut = () => (dispatch: Dispatch, getState): void => {
   switch (getState().syncBackend.get("client", {}).type) {
     case "WebDAV":
-      ["Endpoint", "Username", "Password"].forEach((e) => {
+      ["Endpoint", "Username", "Password"].forEach((e: string): void => {
         persistField("webdav" + e, null);
       });
       break;
@@ -67,7 +69,7 @@ export const setCurrentFileBrowserDirectoryListing = (
   hasMore: boolean,
   additionalSyncBackendState: MapOf<AdditionalSyncBackendState>,
   path: string,
-) => ({
+): SyncBackendAction => ({
   type: "SET_CURRENT_FILE_BROWSER_DIRECTORY_LISTING",
   directoryListing,
   hasMore,
@@ -75,19 +77,19 @@ export const setCurrentFileBrowserDirectoryListing = (
   path,
 });
 
-export const setIsLoadingMoreDirectoryListing = (isLoadingMore: boolean) => ({
+export const setIsLoadingMoreDirectoryListing = (isLoadingMore: boolean): SyncBackendAction => ({
   type: "SET_IS_LOADING_MORE_DIRECTORY_LISTING",
   isLoadingMore,
 });
 
-export const getDirectoryListing = (path: string) => (dispatch, getState) => {
+export const getDirectoryListing = (path: string) => (dispatch: Dispatch, getState): void => {
   dispatch(setLoadingMessage("Getting listing..."));
 
   const client = getState().syncBackend.get("client");
   client
     .getDirectoryListing(path)
     .then(
-      ({ listing, hasMore, additionalSyncBackendState }: DirectoryListing) => {
+      ({ listing, hasMore, additionalSyncBackendState }: DirectoryListing): void => {
         dispatch(
           setCurrentFileBrowserDirectoryListing(
             listing,
@@ -99,7 +101,7 @@ export const getDirectoryListing = (path: string) => (dispatch, getState) => {
         dispatch(hideLoadingMessage());
       },
     )
-    .catch((error: { status: number; }) => {
+    .catch((error: { status: number }): void => {
       dispatch(hideLoadingMessage());
       const error_summary = get("error.error_summary", error) || "";
       if (
@@ -114,7 +116,7 @@ export const getDirectoryListing = (path: string) => (dispatch, getState) => {
     });
 };
 
-export const loadMoreDirectoryListing = () => (dispatch, getState) => {
+export const loadMoreDirectoryListing = () => (dispatch: Dispatch, getState): void => {
   dispatch(setIsLoadingMoreDirectoryListing(true));
 
   const client: Client = getState().syncBackend.get("client");
@@ -126,7 +128,7 @@ export const loadMoreDirectoryListing = () => (dispatch, getState) => {
       currentFileBrowserDirectoryListing.get("additionalSyncBackendState"),
     )
     .then(
-      ({ listing, hasMore, additionalSyncBackendState }: DirectoryListing) => {
+      ({ listing, hasMore, additionalSyncBackendState }: DirectoryListing): void => {
         const extendedListing = currentFileBrowserDirectoryListing
           .get("listing")
           .concat(listing);
@@ -143,7 +145,7 @@ export const loadMoreDirectoryListing = () => (dispatch, getState) => {
 };
 
 export const pushBackup = (pathOrFileId: string, contents: string) => {
-  return (dispatch, getState) => {
+  return (dispatch: Dispatch, getState): void => {
     const client = getState().syncBackend.get("client");
     switch (client.type) {
       case "Dropbox":
@@ -159,12 +161,12 @@ export const pushBackup = (pathOrFileId: string, contents: string) => {
 };
 
 export const downloadFile = (path: string) => {
-  return (dispatch, getState) => {
+  return (dispatch: Dispatch, getState): void => {
     dispatch(setLoadingMessage(`Downloading file ...`));
     getState()
       .syncBackend.get("client")
       .getFileContents(path)
-      .then((fileContents: string) => {
+      .then((fileContents: string): void => {
         dispatch(hideLoadingMessage());
         dispatch(pushBackup(path, fileContents));
         dispatch(parseFile(path, fileContents));
@@ -172,7 +174,7 @@ export const downloadFile = (path: string) => {
         dispatch(setDirty(false, path));
         dispatch(ActionCreators.clearHistory());
       })
-      .catch(() => {
+      .catch((): void => {
         dispatch(hideLoadingMessage());
         dispatch(setIsLoading(false, path));
         dispatch(setOrgFileErrorMessage(`File ${path} not found`));
@@ -180,25 +182,23 @@ export const downloadFile = (path: string) => {
   };
 };
 
-/**
- * @param {String} path Returns the directory name of `path`.
- */
-function dirName(path: string): string {
+
+const dirName = (path: string): string => {
   return pathParse(path).dir;
 }
 
 export const createFile = (path: string, content: string) => {
-  return (dispatch, getState) => {
+  return (dispatch: Dispatch, getState): void => {
     dispatch(setLoadingMessage(`Creating file: ${path}`));
     getState()
       .syncBackend.get("client")
       .createFile(path, content)
-      .then(() => {
+      .then((): void => {
         dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
         dispatch(hideLoadingMessage());
         dispatch(getDirectoryListing(dirName(path)));
       })
-      .catch(() => {
+      .catch((): void => {
         dispatch(hideLoadingMessage());
         dispatch(setIsLoading(false, path));
         dispatch(setOrgFileErrorMessage(`File ${path} not found`));

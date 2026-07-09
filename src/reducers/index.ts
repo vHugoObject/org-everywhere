@@ -1,3 +1,4 @@
+import type { Dispatch } from 'redux'
 import { combineReducers } from "redux";
 import undoable, {
   includeAction,
@@ -67,7 +68,7 @@ const UNDOABLE_ACTIONS = [
 
 // Implementation: Override the redux-undo `undo` and `redo` action creators. Additionally to the redux `undo`, they will force a sync, always.
 ActionCreators.undo = function () {
-  return (dispatch) => {
+  return (dispatch: Dispatch) => {
     dispatch({ type: ActionTypes.UNDO });
     dispatch(setDirty(true));
     dispatch(sync({ forceAction: "push" }));
@@ -75,7 +76,7 @@ ActionCreators.undo = function () {
 };
 
 ActionCreators.redo = function () {
-  return (dispatch) => {
+  return (dispatch: Dispatch) => {
     dispatch({ type: ActionTypes.REDO });
     dispatch(setDirty(true));
     dispatch(sync({ forceAction: "push" }));

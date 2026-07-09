@@ -1,6 +1,6 @@
-/* global process */
 /* eslint jest/expect-expect: ["error", { "assertFunctionNames": ["expect", "check_is_undoable", "check_just_dirtying", "check_is_undoable_on_table", "assertElementDidNotChangeForHeaderIds"] }] */
-
+import { describe, expect, vi } from "vitest";
+import { it, fc } from "@fast-check/vitest";
 import { Map, fromJS } from "immutable";
 import { curry, forEach } from "lodash/fp";
 import generateId from "../lib/id_generator";
@@ -2230,7 +2230,7 @@ describe("org reducer", () => {
     function callInProd(fun) {
       const OLD_ENV = process.env;
       process.env.NODE_ENV = "production";
-      jest.resetModules();
+      vi.resetModules();
       const result = fun();
       process.env = { ...OLD_ENV };
       return result;

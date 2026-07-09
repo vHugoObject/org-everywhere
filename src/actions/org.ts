@@ -1,31 +1,40 @@
-import { ActionCreators, ActionTypes } from "redux-undo";
 import { debounce } from "lodash";
-import {
-  setLoadingMessage,
-  hideLoadingMessage,
-  setIsLoading,
-  setDisappearingLoadingMessage,
-  activatePopup,
-  closePopup,
-} from "./base";
-import { exportOrg } from "../lib/export_org";
+import type { Dispatch } from 'redux';
+import { ActionCreators, ActionTypes } from "redux-undo";
 import substituteTemplateVariables from "../lib/capture_template_substitution";
+import { exportOrg } from "../lib/export_org";
 import { headerWithPath, STATIC_FILE_PREFIX } from "../lib/org_utils";
-
-import sampleCaptureTemplates from "../lib/sample_capture_templates";
-
-import { isAfter, addSeconds } from "date-fns";
-import { parseISO } from "date-fns";
 import {
-  persistIsDirty,
-  saveFileContentsToLocalStorage,
+    activatePopup,
+    closePopup,
+    hideLoadingMessage,
+    setDisappearingLoadingMessage,
+    setIsLoading,
+    setLoadingMessage,
+} from "./base";
+
+import { addSeconds, isAfter, parseISO } from "date-fns";
+import sampleCaptureTemplates from "../lib/sample_capture_templates";
+import type {
+    Context,
+    EditModeType,
+    LogEntryType,
+    OrgAction,
+    OrgTimestampPart,
+    PlanningType,
+  SyncOptions,
+  ForceAction
+} from "../types";
+import {
+    persistIsDirty,
+    saveFileContentsToLocalStorage,
 } from "../util/file_persister";
 import {
-  localStorageAvailable,
-  readOpennessState,
+    localStorageAvailable,
+    readOpennessState,
 } from "../util/settings_persister";
 
-export const parseFile = (path, contents) => (dispatch) => {
+export const parseFile = (path: string, contents: string) => (dispatch: Dispatch<OrgAction>): void => {
   if (localStorageAvailable && !path.startsWith(STATIC_FILE_PREFIX)) {
     saveFileContentsToLocalStorage(path, contents);
     const opennessState = readOpennessState();
@@ -41,14 +50,14 @@ export const parseFile = (path, contents) => (dispatch) => {
   dispatch(applyOpennessState(path));
 };
 
-export const setLastSyncAt = (lastSyncAt, path) => ({
+export const setLastSyncAt = (lastSyncAt: Date, path: string): OrgAction => ({
   type: "SET_LAST_SYNC_AT",
   path,
   lastSyncAt,
 });
 
-export const resetFileDisplay = () => {
-  return (dispatch) => {
+export const resetFileDisplay = (): (dispatch: Dispatch) => void => {
+  return (dispatch: Dispatch): void => {
     dispatch(widenHeader());
     dispatch(closePopup());
     dispatch({ type: "CLEAR_SEARCH" });
@@ -58,12 +67,12 @@ export const resetFileDisplay = () => {
 };
 
 const getDebouncedSyncFunction = () =>
-  debounce((dispatch, options) => dispatch(doSync(options)), 3000, {
+  debounce((dispatch: Dispatch, options: SyncOptions) => dispatch(doSync(options)), 3000, {
     leading: true,
     trailing: true,
   });
 const debouncedSyncFunctions = {};
-const syncDebounced = (dispatch, getState, options) => {
+const syncDebounced = (dispatch: Dispatch, getState, options: SyncOptions): void => {
   // to make sure no file is skipped when multiple files are dirty
   // a seperately debounced function is used per file
   let filesToSync = [];
@@ -74,9 +83,9 @@ const syncDebounced = (dispatch, getState, options) => {
     const files = getState().org.present.get("files");
     filesToSync = files
       .keySeq()
-      .filter((path) => files.getIn([path, "isDirty"]));
+      .filter((path: string) => files.getIn([path, "isDirty"]));
   }
-  filesToSync.forEach((path) => {
+  filesToSync.forEach((path: string): void => {
     let debouncedSyncFunction = debouncedSyncFunctions[path];
     if (!debouncedSyncFunction) {
       debouncedSyncFunctions[path] = getDebouncedSyncFunction();
@@ -86,7 +95,7 @@ const syncDebounced = (dispatch, getState, options) => {
   });
 };
 
-export const sync = (options) => (dispatch, getState) => {
+export const sync = (options: SyncOptions) => (dispatch: Dispatch, getState): void => {
   // Don't do anything if the browser is not online. When it gets back
   // from an offline state, a new `sync`action will be triggered then.
   if (getState().base.get("online")) {
@@ -97,7 +106,7 @@ export const sync = (options) => (dispatch, getState) => {
       console.log("forcing sync");
       const files = getState().org.present.get("files");
       // sync all files on manual sync
-      files.keySeq().forEach((path) => dispatch(doSync({ ...options, path })));
+      files.keySeq().forEach((path: string) => dispatch(doSync({ ...options, path })));
     } else {
       syncDebounced(dispatch, getState, options);
     }
@@ -124,8 +133,8 @@ const doSync =
     successMessage = "Changes pushed",
     shouldSuppressMessages = false,
     path,
-  } = {}) =>
-  (dispatch, getState) => {
+  }: { forceAction?: ForceAction; successMessage?: string | undefined; shouldSuppressMessages?: boolean | undefined; path?: string } = {}) =>
+  (dispatch: Dispatch, getState): void => {
     const client = getState().syncBackend.get("client");
     const currentPath = getState().org.present.get("path");
     path = path || currentPath;
@@ -167,7 +176,7 @@ const doSync =
 
     client
       .getFileContentsAndMetadata(path)
-      .then(({ contents, lastModifiedAt }) => {
+      .then(({ contents, lastModifiedAt }: { contents: string; lastModifiedAt: string; }): void => {
         const isDirty = getState().org.present.getIn([
           "files",
           path,
@@ -196,7 +205,7 @@ const doSync =
             });
             client
               .updateFile(path, contents)
-              .then(() => {
+              .then((): void => {
                 if (!shouldSuppressMessages) {
                   dispatch(setDisappearingLoadingMessage(successMessage, 2000));
                 } else {
@@ -206,7 +215,7 @@ const doSync =
                 dispatch(setDirty(false, path));
                 dispatch(setLastSyncAt(addSeconds(new Date(), 5), path));
               })
-              .catch((error) => {
+              .catch((error): void => {
                 const err = `There was an error pushing the file ${path}: ${error.toString()}`;
                 console.error(err);
                 dispatch(setDisappearingLoadingMessage(err, 5000));
@@ -252,25 +261,25 @@ const doSync =
           }
         }
       })
-      .catch(() => {
+      .catch((): void => {
         dispatch(hideLoadingMessage());
         dispatch(setIsLoading(false, path));
         dispatch(setOrgFileErrorMessage(`File ${path} not found`));
       });
   };
 
-export const openHeader = (headerId) => ({
+export const openHeader = (headerId: number): OrgAction => ({
   type: "OPEN_HEADER",
   headerId,
 });
 
-export const toggleHeaderOpened = (headerId, closeSubheadersRecursively) => ({
+export const toggleHeaderOpened = (headerId: number, closeSubheadersRecursively: boolean): OrgAction => ({
   type: "TOGGLE_HEADER_OPENED",
   headerId,
   closeSubheadersRecursively,
 });
 
-export const selectHeader = (headerId) => (dispatch) => {
+export const selectHeader = (headerId: number) => (dispatch: Dispatch<OrgAction>): void => {
   dispatch({ type: "SELECT_HEADER", headerId });
 
   if (!!headerId) {
@@ -279,11 +288,11 @@ export const selectHeader = (headerId) => (dispatch) => {
   }
 };
 
-export const selectHeaderIndex = (headerIndex) => (dispatch) => {
+export const selectHeaderIndex = (headerIndex: number) => (dispatch: Dispatch): void => {
   dispatch({ type: "SELECT_HEADER_INDEX", headerIndex });
 };
 
-export const setPath = (path) => (dispatch) => {
+export const setPath = (path: string) => (dispatch: Dispatch): void => {
   dispatch({
     type: "SET_PATH",
     path,
@@ -291,7 +300,7 @@ export const setPath = (path) => (dispatch) => {
   dispatch({ type: ActionTypes.CLEAR_HISTORY });
 };
 
-export const selectHeaderAndOpenParents = (path, headerId) => (dispatch) => {
+export const selectHeaderAndOpenParents = (path: string, headerId: number) => (dispatch: Dispatch): void => {
   dispatch(setPath(path));
   dispatch({ type: "OPEN_PARENTS_OF_HEADER", headerId });
   // select header after the file is displayed to allow the header to scroll into view
@@ -304,7 +313,7 @@ export const selectHeaderAndOpenParents = (path, headerId) => (dispatch) => {
  * @param {*} headerId headerId to advance, or null if you want the currently narrowed header.
  * @param {*} logIntoDrawer false to log state change into body, true to log into :LOGBOOK: drawer.
  */
-export const advanceTodoState = (headerId, logIntoDrawer) => ({
+export const advanceTodoState = (headerId: number, logIntoDrawer: boolean): OrgAction => ({
   type: "ADVANCE_TODO_STATE",
   headerId,
   logIntoDrawer,
@@ -312,7 +321,7 @@ export const advanceTodoState = (headerId, logIntoDrawer) => ({
   timestamp: new Date(),
 });
 
-export const setTodoState = (headerId, newTodoState, logIntoDrawer) => ({
+export const setTodoState = (headerId: number, newTodoState: string, logIntoDrawer: boolean): OrgAction => ({
   type: "SET_TODO_STATE",
   newTodoState,
   headerId,
@@ -321,30 +330,30 @@ export const setTodoState = (headerId, newTodoState, logIntoDrawer) => ({
   timestamp: new Date(),
 });
 
-export const enterEditMode = (editModeType) => ({
+export const enterEditMode = (editModeType: EditModeType): OrgAction => ({
   type: "ENTER_EDIT_MODE",
   editModeType,
 });
 
-export const exitEditMode = () => ({
+export const exitEditMode = (): OrgAction => ({
   type: "EXIT_EDIT_MODE",
 });
 
-export const updateHeaderTitle = (headerId, newRawTitle) => ({
-  type: "UPDATE_HEADER_TITLE",
+export const updateHeaderTitle = (headerId: number, newRawTitle: string): OrgAction => ({
+  type: "UPDATE_HEADER_TppITLE",
   headerId,
   newRawTitle,
   dirtying: true,
 });
 
-export const updateHeaderDescription = (headerId, newRawDescription) => ({
+export const updateHeaderDescription = (headerId: number, newRawDescription: string): OrgAction => ({
   type: "UPDATE_HEADER_DESCRIPTION",
   headerId,
   newRawDescription,
   dirtying: true,
 });
 
-export const addHeader = (headerId) => ({
+export const addHeader = (headerId: number): OrgAction => ({
   type: "ADD_HEADER",
   headerId,
   // Performance optimization: Don't actually sync a whole Org file
@@ -353,86 +362,86 @@ export const addHeader = (headerId) => ({
   dirtying: false,
 });
 
-export const duplicateHeader = (headerId) => ({
+export const duplicateHeader = (headerId: number): OrgAction => ({
   type: "DUPLICATE_HEADER",
   headerId,
   dirtying: true,
 });
 
-export const createFirstHeader = () => ({
+export const createFirstHeader = (): OrgAction => ({
   type: "CREATE_FIRST_HEADER",
   dirtying: true,
 });
 
-export const selectNextSiblingHeader = (headerId) => ({
+export const selectNextSiblingHeader = (headerId: number): OrgAction => ({
   type: "SELECT_NEXT_SIBLING_HEADER",
   headerId,
 });
 
-export const addHeaderAndEdit = (headerId) => (dispatch) => {
+export const addHeaderAndEdit = (headerId: number) => (dispatch: Dispatch): void => {
   dispatch(addHeader(headerId));
   dispatch(selectNextSiblingHeader(headerId));
   dispatch(activatePopup("title-editor"));
 };
 
-export const selectNextVisibleHeader = (headerId) => ({
+export const selectNextVisibleHeader = (headerId: number): OrgAction => ({
   type: "SELECT_NEXT_VISIBLE_HEADER",
   headerId,
 });
 
-export const selectPreviousVisibleHeader = (headerId) => ({
+export const selectPreviousVisibleHeader = (headerId: number): OrgAction => ({
   type: "SELECT_PREVIOUS_VISIBLE_HEADER",
   headerId,
 });
 
-export const removeHeader = (headerId) => ({
+export const removeHeader = (headerId: number): OrgAction => ({
   type: "REMOVE_HEADER",
   headerId,
   dirtying: true,
 });
 
-export const moveHeaderUp = (headerId) => ({
+export const moveHeaderUp = (headerId: number): OrgAction => ({
   type: "MOVE_HEADER_UP",
   headerId,
   dirtying: true,
 });
 
-export const moveHeaderDown = (headerId) => ({
+export const moveHeaderDown = (headerId: number): OrgAction => ({
   type: "MOVE_HEADER_DOWN",
   headerId,
   dirtying: true,
 });
 
-export const moveHeaderLeft = (headerId) => ({
+export const moveHeaderLeft = (headerId: number): OrgAction => ({
   type: "MOVE_HEADER_LEFT",
   headerId,
   dirtying: true,
 });
 
-export const moveHeaderRight = (headerId) => ({
+export const moveHeaderRight = (headerId: number): OrgAction => ({
   type: "MOVE_HEADER_RIGHT",
   headerId,
   dirtying: true,
 });
 
-export const moveSubtreeLeft = (headerId) => ({
+export const moveSubtreeLeft = (headerId: number): OrgAction => ({
   type: "MOVE_SUBTREE_LEFT",
   headerId,
   dirtying: true,
 });
 
-export const moveSubtreeRight = (headerId) => ({
+export const moveSubtreeRight = (headerId: number): OrgAction => ({
   type: "MOVE_SUBTREE_RIGHT",
   headerId,
   dirtying: true,
 });
 
 export const refileSubtree = (
-  sourcePath,
-  sourceHeaderId,
-  targetPath,
-  targetHeaderId,
-) => ({
+  sourcePath: string,
+  sourceHeaderId: number,
+  targetPath: string,
+  targetHeaderId: number,
+): OrgAction => ({
   type: "REFILE_SUBTREE",
   sourcePath,
   sourceHeaderId,
@@ -441,53 +450,54 @@ export const refileSubtree = (
   dirtying: true,
 });
 
-export const addNote = (inputText, currentDate) => ({
+export const addNote = (inputText: string, currentDate: Date): OrgAction => ({
   type: "HEADER_ADD_NOTE",
   inputText,
   currentDate,
   dirtying: true,
 });
 
-export const narrowHeader = (headerId) => ({
+export const narrowHeader = (headerId: number): OrgAction => ({
   type: "NARROW_HEADER",
   headerId,
 });
 
-export const widenHeader = () => ({
+export const widenHeader = (): OrgAction => ({
   type: "WIDEN_HEADER",
 });
 
-export const setOpennessState = (path, opennessState) => ({
+export const setOpennessState = (path: string, opennessState: boolean): OrgAction => ({
   type: "SET_OPENNESS_STATE",
   path,
   opennessState,
 });
 
-export const applyOpennessState = (path) => ({
+export const applyOpennessState = (path: string): OrgAction => ({
   type: "APPLY_OPENNESS_STATE",
   path,
 });
 
-export const dirtyAction = (isDirty, path) => ({
+export const dirtyAction = (isDirty: boolean, path: string): OrgAction => ({
   type: "SET_DIRTY",
   isDirty,
   path,
 });
 
-export const setDirty = (isDirty, path) => (dispatch) => {
+export const setDirty = (isDirty: boolean, path: string) => (dispatch: Dispatch): void => {
   persistIsDirty(isDirty, path);
   dispatch(dirtyAction(isDirty, path));
 };
 
-export const setSelectedDescriptionItemIndex = (itemIndex) => (dispatch) => {
+export const setSelectedDescriptionItemIndex = (itemIndex: number) => (dispatch: Dispatch): void => {
   dispatch({ type: "SET_SELECTED_DESCRIPTION_ITEM_INDEX", itemIndex });
 };
 
-export const setSelectedTableId = (tableId) => (dispatch) => {
+export const setSelectedTableId = (tableId: number) => (dispatch: Dispatch): void => {
   dispatch({ type: "SET_SELECTED_TABLE_ID", tableId });
 };
 
-export const setSelectedTableCellId = (cellId) => (dispatch) => {
+
+export const setSelectedTableCellId = (cellId: number) => (dispatch: Dispatch): void => {
   dispatch({ type: "SET_SELECTED_TABLE_CELL_ID", cellId });
 
   if (!!cellId) {
@@ -495,47 +505,47 @@ export const setSelectedTableCellId = (cellId) => (dispatch) => {
   }
 };
 
-export const addNewTableRow = () => ({
+export const addNewTableRow = (): OrgAction => ({
   type: "ADD_NEW_TABLE_ROW",
   dirtying: true,
 });
 
-export const removeTableRow = () => ({
+export const removeTableRow = (): OrgAction => ({
   type: "REMOVE_TABLE_ROW",
   dirtying: true,
 });
 
-export const addNewTableColumn = () => ({
+export const addNewTableColumn = (): OrgAction => ({
   type: "ADD_NEW_TABLE_COLUMN",
   dirtying: true,
 });
 
-export const removeTableColumn = () => ({
+export const removeTableColumn = (): OrgAction => ({
   type: "REMOVE_TABLE_COLUMN",
   dirtying: true,
 });
 
-export const moveTableRowDown = () => ({
+export const moveTableRowDown = (): OrgAction => ({
   type: "MOVE_TABLE_ROW_DOWN",
   dirtying: true,
 });
 
-export const moveTableRowUp = () => ({
+export const moveTableRowUp = (): OrgAction => ({
   type: "MOVE_TABLE_ROW_UP",
   dirtying: true,
 });
 
-export const moveTableColumnLeft = () => ({
+export const moveTableColumnLeft = (): OrgAction => ({
   type: "MOVE_TABLE_COLUMN_LEFT",
   dirtying: true,
 });
 
-export const moveTableColumnRight = () => ({
+export const moveTableColumnRight = (): OrgAction => ({
   type: "MOVE_TABLE_COLUMN_RIGHT",
   dirtying: true,
 });
 
-export const updateTableCellValue = (cellId, newValue) => ({
+export const updateTableCellValue = (cellId: number, newValue: string): OrgAction => ({
   type: "UPDATE_TABLE_CELL_VALUE",
   cellId,
   newValue,
@@ -543,13 +553,13 @@ export const updateTableCellValue = (cellId, newValue) => ({
 });
 
 export const insertCapture =
-  (templateId, content, shouldPrepend) => (dispatch, getState) => {
+  (templateId: number, content: string, shouldPrepend: boolean) => (dispatch: Dispatch, getState): void => {
     dispatch(closePopup());
 
     const template = getState()
       .capture.get("captureTemplates")
       .concat(sampleCaptureTemplates)
-      .find((template) => template.get("id") === templateId);
+      .find((template: string): boolean => template.get("id") === templateId);
     dispatch({
       type: "INSERT_CAPTURE",
       template,
@@ -559,11 +569,11 @@ export const insertCapture =
     });
   };
 
-export const clearPendingCapture = () => ({
+export const clearPendingCapture = (): OrgAction => ({
   type: "CLEAR_PENDING_CAPTURE",
 });
 
-export const insertPendingCapture = () => (dispatch, getState) => {
+export const insertPendingCapture = () => (dispatch: Dispatch, getState): void => {
   const path = getState().org.present.get("path");
   const pendingCapture = getState().org.present.get("pendingCapture");
   const templateName = pendingCapture.get("captureTemplateName");
@@ -576,14 +586,14 @@ export const insertPendingCapture = () => (dispatch, getState) => {
   const template = getState()
     .capture.get("captureTemplates")
     .filter(
-      (template) =>
+      (template: string) =>
         template.get("isAvailableInAllOrgFiles") ||
         template
           .get("orgFilesWhereAvailable")
           .includes(getState().org.present.get("path")),
     )
     .find(
-      (template) => template.get("description").trim() === templateName.trim(),
+      (template: string): boolean => template.get("description").trim() === templateName.trim(),
     );
   if (!template) {
     dispatch(
@@ -627,13 +637,13 @@ export const insertPendingCapture = () => (dispatch, getState) => {
   dispatch(sync({ successMessage: "Item captured" }));
 };
 
-export const advanceCheckboxState = (listItemId) => ({
+export const advanceCheckboxState = (listItemId: number): OrgAction => ({
   type: "ADVANCE_CHECKBOX_STATE",
   listItemId,
   dirtying: true,
 });
 
-export const setSelectedListItemId = (listItemId) => (dispatch) => {
+export const setSelectedListItemId = (listItemId: number) => (dispatch: Dispatch): void => {
   dispatch({ type: "SET_SELECTED_LIST_ITEM_ID", listItemId });
 
   if (!!listItemId) {
@@ -642,78 +652,78 @@ export const setSelectedListItemId = (listItemId) => (dispatch) => {
   }
 };
 
-export const updateListTitleValue = (listItemId, newValue) => ({
+export const updateListTitleValue = (listItemId: number, newValue: string): OrgAction => ({
   type: "UPDATE_LIST_TITLE_VALUE",
   listItemId,
   newValue,
   dirtying: true,
 });
 
-export const updateListContentsValue = (listItemId, newValue) => ({
+export const updateListContentsValue = (listItemId: number, newValue: string): OrgAction => ({
   type: "UPDATE_LIST_CONTENTS_VALUE",
   listItemId,
   newValue,
   dirtying: true,
 });
 
-export const addNewListItem = () => ({
+export const addNewListItem = (): OrgAction => ({
   type: "ADD_NEW_LIST_ITEM",
   dirtying: true,
 });
 
-export const selectNextSiblingListItem = () => ({
+export const selectNextSiblingListItem = (): OrgAction => ({
   type: "SELECT_NEXT_SIBLING_LIST_ITEM",
 });
 
-export const addNewListItemAndEdit = () => (dispatch) => {
+export const addNewListItemAndEdit = () => (dispatch: Dispatch): void => {
   dispatch(addNewListItem());
   dispatch(selectNextSiblingListItem());
   dispatch(enterEditMode("list-title"));
 };
 
-export const removeListItem = () => ({
+export const removeListItem = (): OrgAction => ({
   type: "REMOVE_LIST_ITEM",
   dirtying: true,
 });
 
-export const moveListItemUp = () => ({
+export const moveListItemUp = (): OrgAction => ({
   type: "MOVE_LIST_ITEM_UP",
   dirtying: true,
 });
 
-export const moveListItemDown = () => ({
+export const moveListItemDown = (): OrgAction => ({
   type: "MOVE_LIST_ITEM_DOWN",
   dirtying: true,
 });
 
-export const moveListItemLeft = () => ({
+export const moveListItemLeft = (): OrgAction => ({
   type: "MOVE_LIST_ITEM_LEFT",
   dirtying: true,
 });
 
-export const moveListItemRight = () => ({
+export const moveListItemRight = (): OrgAction => ({
   type: "MOVE_LIST_ITEM_RIGHT",
   dirtying: true,
 });
 
-export const moveListSubtreeLeft = () => ({
+export const moveListSubtreeLeft = (): OrgAction => ({
   type: "MOVE_LIST_SUBTREE_LEFT",
   dirtying: true,
 });
 
-export const moveListSubtreeRight = () => ({
+export const moveListSubtreeRight = (): OrgAction => ({
   type: "MOVE_LIST_SUBTREE_RIGHT",
   dirtying: true,
 });
 
-export const setHeaderTags = (headerId, tags) => ({
+export const setHeaderTags = (headerId: number, tags: Array<string>): OrgAction => ({
   type: "SET_HEADER_TAGS",
   headerId,
   tags,
   dirtying: true,
 });
 
-export const reorderTags = (fromIndex, toIndex) => ({
+export const reorderTags = (fromIndex: number, toIndex: number): OrgAction => ({
   type: "REORDER_TAGS",
   fromIndex,
   toIndex,
@@ -721,7 +731,7 @@ export const reorderTags = (fromIndex, toIndex) => ({
 });
 
 export const reorderPropertyList =
-  (fromIndex, toIndex) => (dispatch, getState) =>
+  (fromIndex: number, toIndex: number) => (dispatch: Dispatch, getState): { type: string; fromIndex: number; toIndex: number; headerId: number; dirtying: boolean; } =>
     dispatch({
       type: "REORDER_PROPERTY_LIST",
       fromIndex,
@@ -737,7 +747,7 @@ export const reorderPropertyList =
  * @param {*} newTimestamp the new value for the timestamp;
  *                         must have the form: {id:, type:, firstTimestamp:, secondTimestamp:}.
  */
-export const updateTimestampWithId = (timestampId, newTimestamp) => ({
+export const updateTimestampWithId = (timestampId: number, newTimestamp: OrgTimestampPart): OrgAction => ({
   type: "UPDATE_TIMESTAMP_WITH_ID",
   timestampId,
   newTimestamp,
@@ -745,10 +755,10 @@ export const updateTimestampWithId = (timestampId, newTimestamp) => ({
 });
 
 export const updatePlanningItemTimestamp = (
-  headerId,
-  planningItemIndex,
-  newTimestamp,
-) => ({
+  headerId: number,
+  planningItemIndex: number,
+  newTimestamp: OrgTimestampPart,
+): OrgAction => ({
   type: "UPDATE_PLANNING_ITEM_TIMESTAMP",
   headerId,
   planningItemIndex,
@@ -756,7 +766,7 @@ export const updatePlanningItemTimestamp = (
   dirtying: true,
 });
 
-export const addNewPlanningItem = (headerId, planningType) => ({
+export const addNewPlanningItem = (headerId: number, planningType: PlanningType): OrgAction => ({
   type: "ADD_NEW_PLANNING_ITEM",
   headerId,
   planningType,
@@ -764,33 +774,33 @@ export const addNewPlanningItem = (headerId, planningType) => ({
   timestamp: new Date(),
 });
 
-export const removePlanningItem = (headerId, planningItemIndex) => ({
+export const removePlanningItem = (headerId: number, planningItemIndex: number): OrgAction => ({
   type: "REMOVE_PLANNING_ITEM",
   headerId,
   planningItemIndex,
   dirtying: true,
 });
 
-export const removeTimestamp = (headerId, timestampId) => ({
+export const removeTimestamp = (headerId: number, timestampId: number): OrgAction => ({
   type: "REMOVE_TIMESTAMP",
   headerId,
   timestampId,
   dirtying: true,
 });
 
-export const updatePropertyListItems = (headerId, newPropertyListItems) => ({
+export const updatePropertyListItems = (headerId: number, newPropertyListItems: Array<string>): OrgAction => ({
   type: "UPDATE_PROPERTY_LIST_ITEMS",
   headerId,
   newPropertyListItems,
   dirtying: true,
 });
 
-export const setOrgFileErrorMessage = (message) => ({
+export const setOrgFileErrorMessage = (message: string): OrgAction => ({
   type: "SET_ORG_FILE_ERROR_MESSAGE",
   message,
 });
 
-export const setLogEntryStop = (headerId, entryId, time) => ({
+export const setLogEntryStop = (headerId: number, entryId: number, time: Date): OrgAction => ({
   type: "SET_LOG_ENTRY_STOP",
   headerId,
   entryId,
@@ -798,7 +808,7 @@ export const setLogEntryStop = (headerId, entryId, time) => ({
   dirtying: true,
 });
 
-export const createLogEntryStart = (headerId, time) => ({
+export const createLogEntryStart = (headerId: number, time: Date): OrgAction => ({
   type: "CREATE_LOG_ENTRY_START",
   headerId,
   time,
@@ -806,11 +816,11 @@ export const createLogEntryStart = (headerId, time) => ({
 });
 
 export const updateLogEntryTime = (
-  headerId,
-  entryIndex,
-  entryType,
-  newTime,
-) => ({
+  headerId: number,
+  entryIndex: number,
+  entryType: LogEntryType,
+  newTime: Date,
+): OrgAction => ({
   type: "UPDATE_LOG_ENTRY_TIME",
   headerId,
   entryIndex,
@@ -820,64 +830,64 @@ export const updateLogEntryTime = (
 });
 
 export const setSearchFilterInformation = (
-  searchFilter,
-  cursorPosition,
-  context,
-) => ({
+  searchFilter: string ,
+  cursorPosition: number,
+  context: Context,
+): OrgAction => ({
   type: "SET_SEARCH_FILTER_INFORMATION",
   searchFilter,
   cursorPosition,
   context,
 });
 
-export const setShowClockDisplay = (showClockDisplay) => ({
+export const setShowClockDisplay = (showClockDisplay: boolean): OrgAction => ({
   type: "TOGGLE_CLOCK_DISPLAY",
   showClockDisplay,
 });
 
 export const updateFileSettingFieldPathValue = (
-  settingId,
-  fieldPath,
-  newValue,
-) => ({
+  settingId: number,
+  fieldPath: string,
+  newValue: string,
+): OrgAction => ({
   type: "UPDATE_FILE_SETTING_FIELD_PATH_VALUE",
   settingId,
   fieldPath,
   newValue,
 });
 
-export const reorderFileSetting = (fromIndex, toIndex) => ({
+export const reorderFileSetting = (fromIndex: number, toIndex: number): OrgAction => ({
   type: "REORDER_FILE_SETTING",
   fromIndex,
   toIndex,
 });
 
-export const deleteFileSetting = (settingId) => ({
+export const deleteFileSetting = (settingId: number): OrgAction => ({
   type: "DELETE_FILE_SETTING",
   settingId,
 });
 
-export const addNewEmptyFileSetting = () => (dispatch) =>
+export const addNewEmptyFileSetting = () => (dispatch: Dispatch): { type: string; } =>
   dispatch({ type: "ADD_NEW_EMPTY_FILE_SETTING" });
 
-export const restoreFileSettings = (newSettings) => ({
+export const restoreFileSettings = (newSettings: Record<string, string>): OrgAction => ({
   type: "RESTORE_FILE_SETTINGS",
   newSettings,
 });
 
-export const saveBookmark = (context, bookmark) => ({
+export const saveBookmark = (context: Context, bookmark: string): OrgAction => ({
   type: "SAVE_BOOKMARK",
   context,
   bookmark,
 });
 
-export const deleteBookmark = (context, bookmark) => ({
+export const deleteBookmark = (context: Context, bookmark: string): OrgAction => ({
   type: "DELETE_BOOKMARK",
   context,
   bookmark,
 });
 
-export const addNewFile = (path, content) => ({
+export const addNewFile = (path: string, content: string): OrgAction => ({
   type: "ADD_NEW_FILE",
   path,
   content,

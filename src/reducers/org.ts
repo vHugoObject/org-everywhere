@@ -875,17 +875,17 @@ const addNewTableRow = (state) => {
     return state;
   }
 
-  state = state.update("headers", (headers) =>
+  let newState = state.update("headers", (headers) =>
     updateTableContainingCellId(
       headers,
       selectedTableCellId,
-      (rowIndex) => (rows) =>
+      (rowIndex: number) => (rows) =>
         rows.insert(rowIndex + 1, newEmptyTableRowLikeRows(rows)),
     ),
   );
 
   return updateDescriptionOfHeaderContainingTableCell(
-    state,
+    newState,
     selectedTableCellId,
   );
 };
@@ -2665,7 +2665,7 @@ function updatePlanningItemsWithRepeaters({
  * More info:
  * https://www.gnu.org/software/emacs/manual/html_node/org/Repeated-tasks.html
  */
-export function noLogRepeatEnabledP({ state, headerIndex }) {
+export const noLogRepeatEnabledP = ({ state, headerIndex }) => {
   const startupOptNoLogRepeat = state
     .get("fileConfigLines")
     .some((elt) => elt.match(/^#\+STARTUP:.*nologrepeat.*/));
