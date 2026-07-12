@@ -1,6 +1,6 @@
 import { List } from "immutable";
 import type { MapOf } from "immutable";
-import { ActionTypes } from "redux-undo";
+import type { ActionTypes } from "redux-undo";
 
 export interface RGB {
   r: number;
@@ -246,7 +246,7 @@ export type OrgHeadline = {
   id: number;
   nestingLevel: number;
   planningItems: Array<any>;
-  propertyListItems: Array<any>;
+  propertyListItems: Array<OrgPropertyListItem>;
   logNotes: Array<any>;
   logBookEntries: Array<any>;
 };
@@ -269,6 +269,14 @@ export type OrgElement =
       type: "url" | "phone-number" | "e-mail" | "www-url";
       content: string;
     };
+
+export type OrgFile = {
+  headers: List<OrgHeadline>;
+  activeClocks: number;
+  todoKeywordSets: List<MapOf<OrgTodoKeywordSet>>;
+  fileConfigLines: List<string>;
+  linesBeforeHeadings: List<string>;
+};
 
 export type ClientType = "WebDAV" | "Dropbox" | "GitLab";
 
@@ -343,6 +351,34 @@ export type ModalPage =
   | "file_settings_editor"
   | "settings";
 
+export type Search = {
+  searchFilter: string;
+  searchFilterExpr: Array<string>;
+};
+
+export type Bookmark = {
+  search: List<Search>;
+  "task-list": List<string>;
+  refile: List<string>;
+};
+
+export type FileSetting = {
+  id: number;
+  path: string;
+  loadOnStartup: boolean;
+  includeInAgenda: boolean;
+  includeInSearch: boolean;
+  includeInRefile: boolean;
+  includeInTasklist: boolean;
+};
+
+export type PendingCapture = {
+  capturePath: string;
+  captureTemplateName: string;
+  captureContent: string;
+  customCaptureVariables: Map<string, string>;
+};
+
 export type SyncBackendAction =
   | { type: "SIGN_OUT" }
   | {
@@ -390,7 +426,7 @@ export type OrgAction =
       path: string;
     }
   | {
-      type: ActionTypes.CLEAR_HISTORY;
+      type: CLEAR_HISTORY;
     }
   | {
       type: "OPEN_PARENTS_OF_HEADER";
@@ -970,12 +1006,74 @@ export type OrgCaptureTemplate = {
   template: string;
 };
 
-export type OrgCaptureState = {
-  captureTemplates: List<MapOf<OrgCaptureTemplate>>;
-};
 export type SyncBackendState = {
   isAuthenticated: boolean;
   client: Client | null;
   currentFileBrowserDirectoryListing: MapOf<DirectoryListing>;
   currentPath: string;
+};
+
+export type OrgCaptureState = {
+  captureTemplates: List<MapOf<OrgCaptureTemplate>>;
+};
+
+export type BaseState = {
+  loadingMessage: string;
+  fontSize: number;
+  bulletStyle: BulletStyle;
+  shouldTapTodoToAdvance: boolean;
+  agendaDefaultDeadlineDelayUnit: DelayUnit;
+  agendaDefaultDeadlineDelayValue: number;
+  editorDescriptionHeightValue: number;
+  agendaStartOnWeekday: boolean;
+  shouldStoreSettingsInSyncBackend: boolean;
+  shouldLiveSync: boolean;
+  showDeadlineDisplay: boolean;
+  shouldSyncOnBecomingVisibile: boolean;
+  shouldShowTitleInOrgFile: boolean;
+  shouldLogIntoDrawer: boolean;
+  closeSubheadersRecursively: boolean;
+  shouldNotIndentOnExport: boolean;
+  hasUnseenChangelog: boolean;
+  lastSeenChangelogHash: string;
+  lastViewedPath: string;
+  customKeybindings: Map<string, string>;
+  modalPageStack: List<ModalPage>;
+  activePopup: PopupType;
+  isLoading: boolean;
+  online: boolean;
+  agendaTimeframe: AgendaTimeframe;
+  finderTab: FinderTab;
+  preferEditRawValues: boolean;
+  colorScheme: string;
+  theme: string;
+};
+
+export type OrgState = {
+  files: List<OrgFile>;
+  search: Search;
+  headers: List<OrgHeadline>;
+  narrowedHeaderId: number;
+  selectedHeaderId: number;
+  selectedHeaderIndex: number;
+  todoKeywordSets: OrgTodoKeywordSet;
+  editMode: EditModeType;
+  linesBeforeHeadings: List<string>;
+  opennessState: boolean;
+  isDirty: boolean;
+  selectedTableId: number;
+  selectedDescriptionItemIndex: number;
+  selectedTableCellId: number;
+  pendingCapture: PendingCapture;
+  checkboxState: OrgCheckboxState;
+  titleLine: any;
+  selectedListItemId: number;
+  lastSyncAt: Date;
+  activeClocks: number;
+  path: string;
+  fileSettings: List<FileSetting>;
+  bookmarks: Bookmark;
+  orgFileErrorMessage: string;
+  showClockDisplay: boolean;
+  fileConfigLines: Array<string>;
 };

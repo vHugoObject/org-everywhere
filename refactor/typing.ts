@@ -53,11 +53,18 @@ const ACTIONTYPESTOCREATE: Array<[string, string]> = [
   ["./src/actions/sync_backend.ts", "SyncBackendAction"],
 ];
 
-const REDUCERTYPESTOCREATE: Array<[string, string]> = [
-  ["./src/reducers/org.ts", "MapOf<BaseState>"],
+const REDUCERSTATETYPES: Array<[string, string]> = [
+  ["./src/reducers/org.ts", "MapOf<OrgState>"],
   ["./src/reducers/capture.ts", "MapOf<OrgCaptureState>"],
-  ["./src/reducers/base.ts", "MapOf<OrgState>"],
+  ["./src/reducers/base.ts", "MapOf<BaseState>"],
   ["./src/reducers/sync_backend.ts", "MapOf<SyncBackendState>"],
+];
+
+const REDUCERTYPESTOCREATE: Array<[string, string]> = [
+  ["./src/reducers/org.ts", "OrgState"],
+  ["./src/reducers/capture.ts", "OrgCaptureState"],
+  ["./src/reducers/base.ts", "BaseState"],
+  ["./src/reducers/sync_backend.ts", "SyncBackendState"],
 ];
 
 const ISBOOLEANTYPEARGS = [
@@ -70,23 +77,30 @@ const ISBOOLEANTYPEARGS = [
   eq("logIntoDrawer"),
   eq("preferEditRawValues"),
   eq("newAgendaStartOnWeekday"),
+  eq("agendaStartOnWeekday"),
   eq("closeSubheadersRecursively"),
   eq("opennessState"),
   eq("dirtying"),
   eq("hasMore"),
   eq("isLoadingMore"),
+  eq("newHasUnseenChangelog"),
+  eq("hasUnseenChangelog"),
 ];
 
 const ISNUMBERTYPEARGS = [
   endsWith("Id"),
   endsWith("Index"),
-  eq("newFontSize"),
   eq("index"),
   eq("newAgendaDefaultDeadlineDelayValue"),
   eq("newEditorDescriptionHeightValue"),
+  eq("agendaDefaultDeadlineDelayValue"),
+  eq("editorDescriptionHeightValue"),
   eq("cursorPosition"),
   eq("nestingLevel"),
   eq("delay"),
+  eq("newFontSize"),
+  eq("fontSize"),
+  eq("activeClocks"),
 ];
 
 const ISDATETYPEARGS = [
@@ -112,24 +126,26 @@ const ISSTRINGTYPEARGS = [
   eq("fieldPath"),
   eq("contents"),
   eq("newTodoState"),
+  eq("todoState"),
   eq("targetPath"),
   eq("sourcePath"),
   eq("template"),
-  eq("bookmark"),
   eq("newRawTitle"),
+  eq("rawTitle"),
   eq("inputText"),
   eq("newRawDescription"),
+  eq("rawDescription"),
   eq("searchFilter"),
   eq("newValue"),
   eq("lastViewedPath"),
   eq("lastViewedFilePath"),
+  eq("lastSeenChangelogHash"),
+  eq("orgFileErrorMessage"),
 ];
 
-const ISARRAYTYPEARGS = [
-  eq("tags"),
-  eq("keybindings"),
-  eq("newPropertyListItems"),
-];
+const ISARRAYOFSTRINGSTYPEARGS = [eq("tags"), eq("fileConfigLines")];
+
+const ISRECORDSTRINGSTRINGTYPEARGS = [eq("newSettings"), eq("data")];
 
 const ISTYPETYPEARGS = [
   endsWith("Type"),
@@ -138,6 +154,9 @@ const ISTYPETYPEARGS = [
   eq("context"),
   eq("dispatch"),
   eq("finderTab"),
+  eq("bulletStyle"),
+  eq("search"),
+  eq("pendingCapture"),
 ];
 
 const getActionType = (node: Node): string => {
@@ -204,14 +223,33 @@ const getTypeForValue = cond([
   [overSome(ISNUMBERTYPEARGS), constant("number")],
   [overSome(ISDATETYPEARGS), constant("Date")],
   [overSome(ISSTRINGTYPEARGS), constant("string")],
-  [overSome(ISARRAYTYPEARGS), constant("Array<string>")],
-  [eq("entryType"), constant("LogEntryType")],
-  [eq("newBulletStyle"), constant("BulletStyle")],
+  [overSome(ISARRAYOFSTRINGSTYPEARGS), constant("Array<string>")],
+  [overSome(ISRECORDSTRINGSTRINGTYPEARGS), constant("Record<string, string>")],
   [overSome(ISTYPETYPEARGS), capitalize],
-  [eq("newAgendaDefaultDeadlineDelayUnit"), constant("DelayUnit")],
+  [eq("checkboxState"), constant("OrgCheckboxState")],
+  [eq("fileSettings"), constant("List<FileSetting>")],
+  [eq("entryType"), constant("LogEntryType")],
+  [eq("editMode"), constant("EditModeType")],
+  [eq("newBulletStyle"), constant("BulletStyle")],
+  [eq("todoKeywordSets"), constant("OrgTodoKeywordSet")],
+  [eq("headers"), constant("List<OrgHeadline>")],
+  [eq("files"), constant("List<OrgFile>")],
+
+  [eq("customKeybindings"), constant("Map<string, string>")],
+  [eq("modalPageStack"), constant("List<ModalPage>")],
+  [eq("activePopup"), constant("PopupType")],
+  [eq("bookmarks"), constant("Bookmark")],
+  [eq("linesBeforeHeadings"), constant("List<string>")],
   [
-    overSome([eq("newSettings"), eq("data")]),
-    constant("Record<string, string>"),
+    overSome([eq("newPropertyListItems"), eq("propertyListItems")]),
+    constant("List<MapOf<OrgPropertyListItem>>"),
+  ],
+  [
+    overSome([
+      eq("newAgendaDefaultDeadlineDelayUnit"),
+      eq("agendaDefaultDeadlineDelayUnit"),
+    ]),
+    constant("DelayUnit"),
   ],
   [stubTrue, constant("any")],
 ]);
@@ -644,4 +682,78 @@ const annotateAllReducerReturnValues = annotateAllXReturnValues(
   isReduxReducer,
 );
 
-await annotateAllReducerReturnValues();
+//await annotateAllReducerReturnValues();
+
+const convertValueIntoPropertySignature = (
+  name: string,
+): PropertySignatureStructure => {
+  return {
+    kind: StructureKind.PropertySignature,
+    name,
+    type: getTypeForValue(name),
+  };
+};
+
+const convertKeysIntoObjectTypeStructure = (
+  keys: Array<string>,
+): TypeElementMemberedNodeStructure => {
+  return {
+    properties: map(convertValueIntoPropertySignature)(keys),
+  };
+};
+
+const createObjectTypeStructure = (
+  typeName: string,
+  keys: Array<string>,
+): TypeAliasDeclarationStructure => {
+  const struct: TypeElementMemberedNodeStructure =
+    convertKeysIntoObjectTypeStructure(keys);
+  const typesWriter: WriterFunction = Writers.objectType(struct);
+  return {
+    kind: StructureKind.TypeAlias,
+    name: typeName,
+    type: typesWriter,
+    isExported: true,
+  };
+};
+
+const collectAllStateValues = (sourceFile: SourceFile): Array<string> => {
+  const stateValues: Set<string> = new Set();
+  sourceFile.forEachDescendant((node: Node) => {
+    if (!Node.isCallExpression(node)) return;
+    const propertyAccessExpr = node.getFirstChildByKind(
+      SyntaxKind.PropertyAccessExpression,
+    );
+    if (
+      !propertyAccessExpr?.getFirstChild(
+        (node: Node) => Node.isIdentifier(node) && node.getText() === "state",
+      )
+    )
+      return;
+    const stateValue = node.getFirstDescendantByKind(SyntaxKind.StringLiteral);
+    stateValue && stateValues.add(stateValue.getLiteralValue());
+  });
+
+  return Array.from(stateValues);
+};
+
+const createStateTypeForSlice = async (
+  filePathTuples: Array<[string, string]>,
+): Promise<void> => {
+  const project = new Project({});
+  const typesFile = project.addSourceFileAtPath("./src/types.ts");
+  filePathTuples.forEach(([filePath, typeName]: [string, string]): void => {
+    const sourceFile: SourceFile = project.addSourceFileAtPath(filePath);
+    const stateValues: Array<string> = collectAllStateValues(sourceFile);
+    const stateTypeAlias: TypeAliasDeclarationStructure =
+      createObjectTypeStructure(typeName, stateValues);
+    typesFile.addTypeAlias(stateTypeAlias);
+  });
+
+  await project.save();
+};
+
+await createStateTypeForSlice([
+  ["./src/reducers/base.ts", "BaseState"],
+  ["./src/reducers/org.ts", "OrgState"],
+]);
