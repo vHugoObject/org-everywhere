@@ -19,7 +19,9 @@ import {
   forEach,
   mergeAll,
   every,
-  first,
+  overEvery,
+  slice,
+  partialRight,
 } from "lodash/fp";
 import {
   Project,
@@ -44,6 +46,7 @@ import {
   Type,
   TypeAliasDeclaration,
   InterfaceDeclaration,
+  CaseClause,
 } from "ts-morph";
 
 const ACTIONTYPESTOCREATE: Array<[string, string]> = [
@@ -753,7 +756,50 @@ const createStateTypeForSlice = async (
   await project.save();
 };
 
-await createStateTypeForSlice([
-  ["./src/reducers/base.ts", "BaseState"],
-  ["./src/reducers/org.ts", "OrgState"],
+export const isUpperAlphaCharacter = (x: string): boolean => !!x.match(/[A-Z]/);
+const isReduxActionType = overEvery([
+  startsWith('"'),
+  endsWith('"'),
+  pipe([slice(1, -1), remove(eq("_")), every(isUpperAlphaCharacter)]),
+]);
+const getReduxReducerTypesFromSwitchCase = (
+  sourceFile: SourceFile,
+): Array<string> => {
+  const cases = sourceFile.getDescendantsOfKind(SyntaxKind.CaseClause);
+  return pipe([
+    filter((caseClause: CaseClause) =>
+      isReduxActionType(caseClause.getExpression().getText()),
+    ),
+    map((caseClause: CaseClause) =>
+      caseClause.getExpression().getText().slice(1, -1),
+    ),
+  ])(cases);
+};
+
+const getMissingActions = async (filePathTuples: Array<[string, string]>) => {
+  const project = new Project({});
+  const typesFile = project.addSourceFileAtPath("./src/types.ts");
+  filePathTuples.forEach(([filePath, typeName]: [string, string]): void => {
+    const sourceFile: SourceFile = project.addSourceFileAtPath(filePath);
+    const sliceType = typesFile.getTypeAlias(typeName);
+    const sliceTypeValues = sliceType?.getText();
+    const statements = getReduxReducerTypesFromSwitchCase(sourceFile);
+    const missingStatements = remove(partialRight(includes, [sliceTypeValues]))(
+      statements,
+    );
+    console.log(filePath, " ", missingStatements);
+    //const combinedStruct = []
+    //sliceType.set(combinedStruct)
+  });
+  //await project.save();
+};
+
+// await createStateTypeForSlice([
+//   ["./src/reducers/base.ts", "BaseState"],
+//   ["./src/reducers/org.ts", "OrgState"],
+// ]);
+
+await getMissingActions([
+  ["./src/reducers/base.ts", "BaseAction"],
+  ["./src/reducers/org.ts", "OrgAction"],
 ]);

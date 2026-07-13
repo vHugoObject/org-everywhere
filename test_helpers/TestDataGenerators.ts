@@ -352,6 +352,14 @@ export const fcNonSpaceRandomCharacterGenerator = fcRandomCharacterGenerator(
   TESTNONSPACESCHARACTERRANGE,
 );
 
+export const fcRandomUpperAlphaChar = fcRandomCharacterGenerator(
+  TESTUPPERALPHACHARACTERRANGE,
+);
+
+export const fcRandomLowerAlphaChar = fcRandomCharacterGenerator(
+  TESTLOWERALPHACHARACTERRANGE,
+);
+
 export const fcTestLinearRangeGenerator = curry(
   (fcGen: fc.GeneratorValue, rangeSize: number): [number, number] => {
     return pipe([fcRandomInteger, convertRangeSizeAndMinIntoRange(rangeSize)])(

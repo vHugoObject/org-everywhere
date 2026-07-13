@@ -806,6 +806,17 @@ export type OrgAction =
       type: "ADD_NEW_FILE";
       path: string;
       content: string;
+    }
+  | {
+      type: "UPDATE_HEADER_TITLE";
+      newRawTitle: string;
+      headerId: number;
+    }
+  | {
+      type: "TIMESTAMP_TITLE";
+    }
+  | {
+      type: "TIMESTAMP_DESCRIPTION";
     };
 
 export type UpdateOrgCaptureAction = {
@@ -985,6 +996,14 @@ export type BaseAction =
   | {
       type: "PREFER_EDIT_RAW_VALUES";
       preferEditRawValues: boolean;
+    }
+  | {
+      type: "SET_HAS_UNSEEN_CHANGELOG";
+      newHasUnseenChangelog: boolean;
+    }
+  | {
+      type: "SET_LAST_SEEN_CHANGELOG_HEADER";
+      newLastSeenChangelogHash: string;
     };
 
 export type Action =

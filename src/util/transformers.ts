@@ -390,3 +390,6 @@ export const addOneWeek = addWeeks(1);
 export const addTwoWeeks = addWeeks(2);
 export const addOneMonth = addMonths(1);
 export const addOneYear = addYears(1);
+
+export const isUpperAlphaCharacter = (x: string): boolean => !!x.match(/[A-Z]/);
+export const everyCharacterIsUpperAlpha = every(isUpperAlphaCharacter);
