@@ -426,7 +426,7 @@ export type OrgAction =
       path: string;
     }
   | {
-      type: CLEAR_HISTORY;
+    type: ActionTypes;
     }
   | {
       type: "OPEN_PARENTS_OF_HEADER";
