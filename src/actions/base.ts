@@ -1,5 +1,5 @@
 import type { Dispatch } from "redux";
-import type { ModalPage, PopupType } from "../types.ts";
+import type { ModalPage, PopupType, BulletStyle } from "../types.ts";
 import sampleContent from "../../sample.org?raw";
 import { STATIC_FILE_PREFIX } from "../lib/org_utils";
 import type {
@@ -10,7 +10,7 @@ import type {
 } from "../types";
 import { parseFile, resetFileDisplay, setPath } from "./org";
 
-export const setLoadingMessage = (loadingMessage: string): BaseAction => ({
+export const setLoadingMessage = (loadingMessage: string | null): BaseAction => ({
   type: "SET_LOADING_MESSAGE",
   loadingMessage,
 });
@@ -19,7 +19,7 @@ export const hideLoadingMessage = (): BaseAction => ({
   type: "HIDE_LOADING_MESSAGE",
 });
 
-export const setIsLoading = (isLoading: boolean, path: string): BaseAction => ({
+export const setIsLoading = (isLoading: Set<string>, path: string): BaseAction => ({
   type: "SET_IS_LOADING",
   isLoading,
   path,
@@ -31,7 +31,7 @@ export const setIsOnline = (online: boolean): BaseAction => ({
 });
 
 export const setDisappearingLoadingMessage =
-  (loadingMessage: string, delay: number) =>
+  (loadingMessage: string | null, delay: number) =>
   (dispatch: Dispatch): void => {
     dispatch(setLoadingMessage(loadingMessage));
     setTimeout(() => dispatch(hideLoadingMessage()), delay);
@@ -72,7 +72,7 @@ export const setFontSize = (newFontSize: number): BaseAction => ({
   newFontSize,
 });
 
-export const setBulletStyle = (newBulletStyle: string): BaseAction => ({
+export const setBulletStyle = (newBulletStyle: BulletStyle): BaseAction => ({
   type: "SET_BULLET_STYLE",
   newBulletStyle,
 });

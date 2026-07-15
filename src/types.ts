@@ -1,4 +1,4 @@
-import { List } from "immutable";
+import { List, Set } from "immutable";
 import type { MapOf } from "immutable";
 import type { ActionTypes } from "redux-undo";
 
@@ -22,8 +22,8 @@ export type FinderTab = "Search" | "Clock List" | "Task List";
 export type BulletStyle = "Fancy" | "Classic";
 
 export type OrgTodoKeywordSet = {
-  keywords: Array<string>;
-  completedKeywords: Array<string>;
+  keywords: List<string>;
+  completedKeywords: List<string>;
   configLine?: string;
   default: boolean;
 };
@@ -162,8 +162,10 @@ export type OrgPercentageCookie = {
 export type OrgFractionCookie = {
   id: number;
   type: "fraction-cookie";
-  fraction: [string | undefined, string | undefined];
+  fraction: List<string | undefined>;
 };
+
+export type OrgCookie = OrgPercentageCookie | OrgFractionCookie;
 
 export type OrgInlineMarkup = {
   id: number;
@@ -179,15 +181,21 @@ export type OrgClockString = {
   secondTimestamp: OrgTimestampPart | null;
 };
 
+type OrgTimestampType =
+  | "TIMESTAMP_TITLE"
+  | "TIMESTAMP_DESCRIPTION"
+  | "TIMESTAMP_LOG_NOTES";
 export type OrgTimestamp = {
   id: number;
-  type: "timestamp";
+  type: OrgTimestampType;
   timestamp: MapOf<OrgTimestamp>;
 };
 
+export type OrgPlanningItem = {};
+
 export type OrgPropertyListItem = {
   property: string;
-  value: OrgText | OrgTimestamp | Array<OrgElement> | null;
+  value: OrgText | OrgTimestamp | List<OrgElement> | null;
   id: number;
 };
 
@@ -195,7 +203,7 @@ export type OrgCheckboxState = "unchecked" | "checked" | "partial";
 
 export type OrgListItem = {
   id: number;
-  titleLine: Array<OrgElement>;
+  titleLine: List<OrgElement>;
   contents: any;
   forceNumber: string | null;
   isCheckbox: boolean;
@@ -221,34 +229,34 @@ export type OrgTableCell = {
 export type OrgTableRow = {
   id: number;
   type: "table-row";
-  contents: Array<OrgTableCell>;
+  contents: List<OrgTableCell>;
 };
 
 export type OrgTable = {
   id: number;
   type: "table";
-  contents: Array<OrgTableRow>;
-  columnProperties: Array<any>;
+  contents: List<OrgTableRow>;
+  columnProperties: List<any>;
 };
 
 export type OrgTitleLine = {
   title: string;
   rawTitle: string;
   todoKeyword: string;
-  tags: Array<string>;
+  tags: List<string>;
 };
 
 export type OrgHeadline = {
   titleLine: OrgTitleLine;
   rawDescription: string;
-  description: Array<any>;
+  description: List<any>;
   opened: boolean;
   id: number;
   nestingLevel: number;
-  planningItems: Array<any>;
-  propertyListItems: Array<OrgPropertyListItem>;
-  logNotes: Array<any>;
-  logBookEntries: Array<any>;
+  planningItems: List<any>;
+  propertyListItems: List<OrgPropertyListItem>;
+  logNotes: List<any>;
+  logBookEntries: List<any>;
 };
 
 export type OrgElement =
@@ -353,7 +361,7 @@ export type ModalPage =
 
 export type Search = {
   searchFilter: string;
-  searchFilterExpr: Array<string>;
+  searchFilterExpr: List<string>;
 };
 
 export type Bookmark = {
@@ -426,7 +434,7 @@ export type OrgAction =
       path: string;
     }
   | {
-    type: ActionTypes;
+      type: ActionTypes;
     }
   | {
       type: "OPEN_PARENTS_OF_HEADER";
@@ -872,14 +880,14 @@ export type OrgCaptureAction =
 export type BaseAction =
   | {
       type: "SET_LOADING_MESSAGE";
-      loadingMessage: string;
+      loadingMessage: string | null;
     }
   | {
       type: "HIDE_LOADING_MESSAGE";
     }
   | {
       type: "SET_IS_LOADING";
-      isLoading: boolean;
+      isLoading: Set<string>;
       path: string;
     }
   | {
@@ -896,7 +904,7 @@ export type BaseAction =
     }
   | {
       type: "SET_BULLET_STYLE";
-      newBulletStyle: string;
+      newBulletStyle: BulletStyle;
     }
   | {
       type: "SET_SHOULD_TAP_TODO_TO_ADVANCE";
@@ -1036,8 +1044,10 @@ export type OrgCaptureState = {
   captureTemplates: List<MapOf<OrgCaptureTemplate>>;
 };
 
+export type Popup = MapOf<{ type: PopupType; data: Map<string, string> }>
+
 export type BaseState = {
-  loadingMessage: string;
+  loadingMessage: string | null;
   fontSize: number;
   bulletStyle: BulletStyle;
   shouldTapTodoToAdvance: boolean;
@@ -1058,8 +1068,8 @@ export type BaseState = {
   lastViewedPath: string;
   customKeybindings: Map<string, string>;
   modalPageStack: List<ModalPage>;
-  activePopup: PopupType;
-  isLoading: boolean;
+  activePopup: Popup | null;
+  isLoading: Set<string>;
   online: boolean;
   agendaTimeframe: AgendaTimeframe;
   finderTab: FinderTab;
@@ -1091,8 +1101,8 @@ export type OrgState = {
   activeClocks: number;
   path: string;
   fileSettings: List<FileSetting>;
-  bookmarks: Bookmark;
+  bookmarks: List<Bookmark>;
   orgFileErrorMessage: string;
   showClockDisplay: boolean;
-  fileConfigLines: Array<string>;
+  fileConfigLines: List<string>;
 };

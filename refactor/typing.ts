@@ -22,6 +22,9 @@ import {
   overEvery,
   slice,
   partialRight,
+  split,
+  indexOf,
+  lastIndexOf,
 } from "lodash/fp";
 import {
   Project,
@@ -47,6 +50,11 @@ import {
   TypeAliasDeclaration,
   InterfaceDeclaration,
   CaseClause,
+  UnionTypeNode,
+  TypeNode,
+  ObjectBindingPattern,
+  ArrayBindingPattern,
+  BindingElement,
 } from "ts-morph";
 
 const ACTIONTYPESTOCREATE: Array<[string, string]> = [
@@ -58,8 +66,8 @@ const ACTIONTYPESTOCREATE: Array<[string, string]> = [
 
 const REDUCERSTATETYPES: Array<[string, string]> = [
   ["./src/reducers/org.ts", "MapOf<OrgState>"],
-  ["./src/reducers/capture.ts", "MapOf<OrgCaptureState>"],
   ["./src/reducers/base.ts", "MapOf<BaseState>"],
+  ["./src/reducers/capture.ts", "MapOf<OrgCaptureState>"],
   ["./src/reducers/sync_backend.ts", "MapOf<SyncBackendState>"],
 ];
 
@@ -104,6 +112,7 @@ const ISNUMBERTYPEARGS = [
   eq("newFontSize"),
   eq("fontSize"),
   eq("activeClocks"),
+  eq("nestingLevel"),
 ];
 
 const ISDATETYPEARGS = [
@@ -115,23 +124,18 @@ const ISDATETYPEARGS = [
 ];
 
 const ISSTRINGTYPEARGS = [
-  eq("contents"),
   eq("content"),
   eq("loadingMessage"),
   eq("path"),
-  eq("lastViewedPath"),
   eq("colorScheme"),
   eq("theme"),
   eq("staticFile"),
   eq("keybindingName"),
   eq("keybinding"),
   eq("message"),
-  eq("fieldPath"),
   eq("contents"),
   eq("newTodoState"),
   eq("todoState"),
-  eq("targetPath"),
-  eq("sourcePath"),
   eq("template"),
   eq("newRawTitle"),
   eq("rawTitle"),
@@ -140,10 +144,10 @@ const ISSTRINGTYPEARGS = [
   eq("rawDescription"),
   eq("searchFilter"),
   eq("newValue"),
-  eq("lastViewedPath"),
-  eq("lastViewedFilePath"),
   eq("lastSeenChangelogHash"),
   eq("orgFileErrorMessage"),
+  eq("newTodoState"),
+  endsWith("Path"),
 ];
 
 const ISARRAYOFSTRINGSTYPEARGS = [eq("tags"), eq("fileConfigLines")];
@@ -160,6 +164,7 @@ const ISTYPETYPEARGS = [
   eq("bulletStyle"),
   eq("search"),
   eq("pendingCapture"),
+  eq("bookmark"),
 ];
 
 const getActionType = (node: Node): string => {
@@ -221,28 +226,32 @@ const runReplacers = (string: string): string => {
   );
 };
 
+// MapOf, List, blah, blah
 const getTypeForValue = cond([
-  [overSome(ISBOOLEANTYPEARGS), constant("boolean")],
-  [overSome(ISNUMBERTYPEARGS), constant("number")],
-  [overSome(ISDATETYPEARGS), constant("Date")],
-  [overSome(ISSTRINGTYPEARGS), constant("string")],
-  [overSome(ISARRAYOFSTRINGSTYPEARGS), constant("Array<string>")],
-  [overSome(ISRECORDSTRINGSTRINGTYPEARGS), constant("Record<string, string>")],
-  [overSome(ISTYPETYPEARGS), capitalize],
   [eq("checkboxState"), constant("OrgCheckboxState")],
-  [eq("fileSettings"), constant("List<FileSetting>")],
+  [eq("fileSettings"), constant("List<MapOf<FileSetting>>")],
   [eq("entryType"), constant("LogEntryType")],
   [eq("editMode"), constant("EditModeType")],
   [eq("newBulletStyle"), constant("BulletStyle")],
   [eq("todoKeywordSets"), constant("OrgTodoKeywordSet")],
-  [eq("headers"), constant("List<OrgHeadline>")],
+  [
+    overSome([eq("headers"), eq("subHeaders")]),
+    constant("List<MapOf<OrgHeadline>>"),
+  ],
+  [eq("rows"), constant("List<OrgTableRow>")],
+  [eq("fromList"), constant("List<any>")],
   [eq("files"), constant("List<OrgFile>")],
-
+  [eq("planningItem"), constant("MapOf<OrgPlanningItem>")],
+  [eq("planningItems"), constant("List<MapOf<OrgPlanningItem>>")],
   [eq("customKeybindings"), constant("Map<string, string>")],
   [eq("modalPageStack"), constant("List<ModalPage>")],
-  [eq("activePopup"), constant("PopupType")],
-  [eq("bookmarks"), constant("Bookmark")],
+  [eq("activePopup"), constant("Popup")],
+  [eq("activePopupType"), constant("PopupType")],
+  [eq("activePopupData"), constant("Map<string, string>")],
   [eq("linesBeforeHeadings"), constant("List<string>")],
+  [eq("cell"), constant("MapOf<OrgTableCell>")],
+  [eq("listPart"), constant("MapOf<OrgList>")],
+  [eq("isLoading"), constant("Set<string>")],
   [
     overSome([eq("newPropertyListItems"), eq("propertyListItems")]),
     constant("List<MapOf<OrgPropertyListItem>>"),
@@ -254,6 +263,14 @@ const getTypeForValue = cond([
     ]),
     constant("DelayUnit"),
   ],
+  [overSome(ISBOOLEANTYPEARGS), constant("boolean")],
+  [overSome(ISNUMBERTYPEARGS), constant("number")],
+  [overSome(ISDATETYPEARGS), constant("Date")],
+  [overSome(ISSTRINGTYPEARGS), constant("string")],
+  [overSome(ISARRAYOFSTRINGSTYPEARGS), constant("List<string>")],
+  [overSome(ISRECORDSTRINGSTRINGTYPEARGS), constant("Record<string, string>")],
+  [overSome(ISTYPETYPEARGS), capitalize],
+
   [stubTrue, constant("any")],
 ]);
 
@@ -595,12 +612,10 @@ const maybeAddImportToFile = (
   sourceFile.addImportDeclaration(structure);
 };
 
-const PRIMITIVETYPESSET = new Set(["string", "number", "boolean", ""]);
-const isPrimitiveType = (
-  type: Type,
-  typeSet: Set<string> = PRIMITIVETYPESSET,
-): boolean => {
-  if (typeSet.has(type.getText())) return true;
+const PRIMITIVETYPESSET = new Set(["string", "number", "boolean"]);
+
+const isPrimitiveType = (type: Type): boolean => {
+  if (PRIMITIVETYPESSET.has(type.getText())) return true;
   if (type.isTuple()) return every(isPrimitiveType, type.getTupleElements());
   if (type.isArray()) {
     const arrayElementType = type.getArrayElementType();
@@ -611,12 +626,51 @@ const isPrimitiveType = (
     return every(isPrimitiveType, type.getTypeArguments());
   return false;
 };
+
+const createObjectBindingPatternType = (node: ObjectBindingPattern): string => {
+  return pipe([
+    map((binding: BindingElement) => {
+      const name = binding.getText();
+      const type: string = getTypeForValue(name);
+      return [name, type];
+    }),
+    compact,
+    Object.fromEntries,
+    JSON.stringify,
+    (x: string): string => x.replaceAll('"', ""),
+  ])(node.getElements());
+};
+
+const createArrayBindingPatternType = (node: ArrayBindingPattern): string => {
+  return pipe([
+    map((binding: BindingElement) => {
+      const name = binding.getText();
+      const type: string = getTypeForValue(name);
+      return type;
+    }),
+    compact,
+    JSON.stringify,
+    (x: string): string => x.replaceAll('"', ""),
+  ])(node.getElements());
+};
+
 const handleTypescriptInference = (
   node: ParameterDeclaration,
-  sourceFile: SourceFile,
   type: Type,
 ): void => {
   //if (normalType) just return it as a string
+  const objPattern = node.getFirstChildByKind(SyntaxKind.ObjectBindingPattern);
+  if (objPattern) {
+    const objectBindingPatternType = createObjectBindingPatternType(objPattern);
+    console.log(objectBindingPatternType);
+    node.setType(objectBindingPatternType);
+  }
+  const arrayPattern = node.getFirstChildByKind(SyntaxKind.ArrayBindingPattern);
+  if (arrayPattern) {
+    const arrayBindingPatternType = createArrayBindingPatternType(arrayPattern);
+    console.log(arrayBindingPatternType);
+    node.setType(arrayBindingPatternType);
+  }
   if (isPrimitiveType(type)) node.setType(type.getText());
 };
 
@@ -634,7 +688,7 @@ const annotateParameter = (
   }
 
   if (myInference == "any" && typescriptInferenceAsString !== "any") {
-    handleTypescriptInference(node, sourceFile, typescriptInference);
+    handleTypescriptInference(node, typescriptInference);
     return;
   }
 
@@ -650,7 +704,7 @@ const annotateParameter = (
     maybeAddImportToFile(sourceFile, moduleSpecifier, myInference);
   }
 
-  console.log(paramName, myInference);
+  console.log(sourceFile.getBaseName(), paramName, myInference);
   node.setType(myInference);
 };
 
@@ -680,12 +734,6 @@ const annotateAllActionCreatorReturnValues = annotateAllXReturnValues(
   ACTIONTYPESTOCREATE,
   isActionCreator,
 );
-const annotateAllReducerReturnValues = annotateAllXReturnValues(
-  [["./src/reducers/capture.ts", "MapOf<OrgCaptureState>"]],
-  isReduxReducer,
-);
-
-//await annotateAllReducerReturnValues();
 
 const convertValueIntoPropertySignature = (
   name: string,
@@ -776,7 +824,9 @@ const getReduxReducerTypesFromSwitchCase = (
   ])(cases);
 };
 
-const getMissingActions = async (filePathTuples: Array<[string, string]>) => {
+const getMissingActions = async (
+  filePathTuples: Array<[string, string]>,
+): Promise<void> => {
   const project = new Project({});
   const typesFile = project.addSourceFileAtPath("./src/types.ts");
   filePathTuples.forEach(([filePath, typeName]: [string, string]): void => {
@@ -787,19 +837,125 @@ const getMissingActions = async (filePathTuples: Array<[string, string]>) => {
     const missingStatements = remove(partialRight(includes, [sliceTypeValues]))(
       statements,
     );
-    console.log(filePath, " ", missingStatements);
-    //const combinedStruct = []
-    //sliceType.set(combinedStruct)
+    //console.log(filePath, " ", missingStatements);
   });
-  //await project.save();
 };
 
-// await createStateTypeForSlice([
-//   ["./src/reducers/base.ts", "BaseState"],
-//   ["./src/reducers/org.ts", "OrgState"],
-// ]);
+const annotateFunctionArgsInReduxReducerFile =
+  (
+    stateTypeName: string,
+    actionMapping: Record<string, string>,
+    functionMapping: Record<string, string>,
+    sourceFile: SourceFile,
+  ) =>
+  (descendant: Node): void => {
+    if (!Node.isParameterDeclaration(descendant) || descendant.getTypeNode())
+      return;
+    const name: string = descendant.getName();
+    if (name == "state") {
+      descendant.setType(stateTypeName);
+      return;
+    }
+    if (name !== "action") {
+      annotateParameter(sourceFile, descendant);
+      return;
+    }
 
-await getMissingActions([
-  ["./src/reducers/base.ts", "BaseAction"],
-  ["./src/reducers/org.ts", "OrgAction"],
+    const func = descendant.getFirstAncestor((anc: Node) => {
+      return Node.isVariableDeclaration(anc);
+    });
+
+    if (!func) return;
+
+    const funcName: string = func.getName();
+    const actionTypeName = functionMapping[funcName];
+
+    if (!actionTypeName) return;
+
+    const actionObj = actionMapping[actionTypeName];
+
+    if (actionObj) descendant.setType(actionObj);
+  };
+
+const convertActionTypeIntoObj = (
+  node: UnionTypeNode,
+): Record<string, string> => {
+  const typeNodeToTuple = (typeNode: TypeNode): [string, string] => {
+    const typeNodeAsText = typeNode.getText();
+    const typeLine = pipe([split("\n"), filter(includes("type:")), trim])(
+      typeNodeAsText,
+    );
+    const actionTypeName = typeLine.slice(
+      indexOf('"', typeLine) + 1,
+      lastIndexOf('"', typeLine),
+    );
+    return [actionTypeName, typeNodeAsText];
+  };
+  return pipe([map(typeNodeToTuple), Object.fromEntries])(node.getTypeNodes());
+};
+
+const convertReducerCaseClausesIntoObj = (
+  sourceFile: SourceFile,
+): Record<string, string> => {
+  const cases = sourceFile.getDescendantsOfKind(SyntaxKind.CaseClause);
+  const expectedArgs = new Set(["state", "action"]);
+  const getFunctionNameFromCaseClause = (clause: CaseClause) => {
+    const func = clause.getFirstDescendantByKind(SyntaxKind.CallExpression);
+    if (!func) return;
+    const args = new Set(
+      map((node: Node): string => node.getText())(func.getArguments()),
+    );
+    if (expectedArgs.difference(args).size === 0)
+      return func.getExpression().getText();
+    if (func.getExpression().getText() == "inFile")
+      return func.getArguments()[0].getText();
+  };
+  return pipe([
+    filter((caseClause: CaseClause) =>
+      isReduxActionType(caseClause.getExpression().getText()),
+    ),
+    map((caseClause: CaseClause) => [
+      getFunctionNameFromCaseClause(caseClause),
+      caseClause.getExpression().getText().slice(1, -1),
+    ]),
+    Object.fromEntries,
+  ])(cases);
+};
+
+const annotateReduxReducerFiles = async (
+  filePathTuples: Array<[string, string, string]>,
+): Promise<void> => {
+  const project = new Project({});
+  const typesFile = project.addSourceFileAtPath("./src/types.ts");
+  filePathTuples.forEach(
+    ([filePath, actionTypeName, stateTypeName]: [
+      string,
+      string,
+      string,
+    ]): void => {
+      const sourceFile: SourceFile = project.addSourceFileAtPath(filePath);
+      const actionType = typesFile
+        .getTypeAlias(actionTypeName)
+        ?.getFirstDescendantByKind(SyntaxKind.UnionType);
+      if (!actionType) return;
+      // Record<actionTypeName, actionObj>
+      const actionMapping = convertActionTypeIntoObj(actionType);
+      // Record<functionName, actionTypeName>
+      const functionMapping = convertReducerCaseClausesIntoObj(sourceFile);
+      sourceFile.forEachDescendant(
+        annotateFunctionArgsInReduxReducerFile(
+          stateTypeName,
+          actionMapping,
+          functionMapping,
+          sourceFile,
+        ),
+      );
+      sourceFile.organizeImports();
+    },
+  );
+  await project.save();
+};
+
+await annotateReduxReducerFiles([
+  ["./src/reducers/base.ts", "BaseAction", "MapOf<BaseState>"],
 ]);

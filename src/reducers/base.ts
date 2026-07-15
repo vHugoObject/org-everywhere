@@ -1,67 +1,154 @@
-import { Map, List, fromJS } from "immutable";
-
+import { List, Map, fromJS, type MapOf, Set } from "immutable";
+import type { BaseState, BaseAction, DelayUnit, BulletStyle, ModalPage, PopupType, AgendaTimeframe, FinderTab } from "../types";
 import { applyCategorySettingsFromConfig } from "../util/settings_persister";
 
-const setLoadingMessage = (state, action) =>
-  state.set("loadingMessage", action.loadingMessage);
+const setLoadingMessage = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_LOADING_MESSAGE";
+    loadingMessage: string | null;
+  },
+): MapOf<BaseState> => state.set("loadingMessage", action.loadingMessage);
 
-const hideLoadingMessage = (state) => state.set("loadingMessage", null);
+const hideLoadingMessage = (state: MapOf<BaseState>) =>
+  state.set("loadingMessage", null);
 
-const setFontSize = (state, action) =>
-  state.set("fontSize", action.newFontSize);
+const setFontSize = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_FONT_SIZE";
+    newFontSize: number;
+  },
+): MapOf<BaseState> => state.set("fontSize", action.newFontSize);
 
-const setBulletStyle = (state, action) =>
-  state.set("bulletStyle", action.newBulletStyle);
+const setBulletStyle = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_BULLET_STYLE";
+    newBulletStyle: BulletStyle;
+  },
+): MapOf<BaseState> => state.set("bulletStyle", action.newBulletStyle);
 
-const setShouldTapTodoToAdvance = (state, action) =>
+const setShouldTapTodoToAdvance = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_SHOULD_TAP_TODO_TO_ADVANCE";
+    newShouldTapTodoToAdvance: boolean;
+  },
+): MapOf<BaseState> =>
   state.set("shouldTapTodoToAdvance", action.newShouldTapTodoToAdvance);
 
-const setAgendaDefaultDeadlineDelayUnit = (state, action) =>
+const setAgendaDefaultDeadlineDelayUnit = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_AGENDA_DEFAULT_DEADLINE_DELAY_UNIT";
+    newAgendaDefaultDeadlineDelayUnit: DelayUnit;
+  },
+): MapOf<BaseState> =>
   state.set(
     "agendaDefaultDeadlineDelayUnit",
     action.newAgendaDefaultDeadlineDelayUnit,
   );
 
-const setAgendaDefaultDeadlineDelayValue = (state, action) =>
+const setAgendaDefaultDeadlineDelayValue = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_AGENDA_DEFAULT_DEADLINE_DELAY_VALUE";
+    newAgendaDefaultDeadlineDelayValue: number;
+  },
+): MapOf<BaseState> =>
   state.set(
     "agendaDefaultDeadlineDelayValue",
     action.newAgendaDefaultDeadlineDelayValue,
   );
 
-const setEditorDescriptionHeightValue = (state, action) =>
+const setEditorDescriptionHeightValue = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_EDITOR_DESCRIPTION_HEIGHT_VALUE";
+    newEditorDescriptionHeightValue: number;
+  },
+): MapOf<BaseState> =>
   state.set(
     "editorDescriptionHeightValue",
     action.newEditorDescriptionHeightValue,
   );
 
-const setAgendaStartOnWeekday = (state, action) =>
+const setAgendaStartOnWeekday = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_AGENDA_START_ON_WEEKDAY";
+    newAgendaStartOnWeekday: boolean;
+  },
+): MapOf<BaseState> =>
   state.set("agendaStartOnWeekday", action.newAgendaStartOnWeekday);
 
-const setShouldStoreSettingsInSyncBackend = (state, action) =>
+const setShouldStoreSettingsInSyncBackend = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_SHOULD_STORE_SETTINGS_IN_SYNC_BACKEND";
+    newShouldStoreSettingsInSyncBackend: boolean;
+  },
+): MapOf<BaseState> =>
   state.set(
     "shouldStoreSettingsInSyncBackend",
     action.newShouldStoreSettingsInSyncBackend,
   );
 
-const setShouldLiveSync = (state, action) =>
-  state.set("shouldLiveSync", action.shouldLiveSync);
+const setShouldLiveSync = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_SHOULD_LIVE_SYNC";
+    shouldLiveSync: boolean;
+  },
+): MapOf<BaseState> => state.set("shouldLiveSync", action.shouldLiveSync);
 
-const setShowDeadlineDisplay = (state, action) =>
+const setShowDeadlineDisplay = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_SHOW_DEADLINE_DISPLAY";
+    showDeadlineDisplay: boolean;
+  },
+): MapOf<BaseState> =>
   state.set("showDeadlineDisplay", action.showDeadlineDisplay);
 
-const setShouldSyncOnBecomingVisibile = (state, action) =>
+const setShouldSyncOnBecomingVisibile = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_SHOULD_SYNC_ON_BECOMING_VISIBLE";
+    shouldSyncOnBecomingVisibile: boolean;
+  },
+): MapOf<BaseState> =>
   state.set(
     "shouldSyncOnBecomingVisibile",
     action.shouldSyncOnBecomingVisibile,
   );
 
-const setShouldShowTitleInOrgFile = (state, action) =>
+const setShouldShowTitleInOrgFile = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_SHOULD_SHOW_TITLE_IN_ORG_FILE";
+    shouldShowTitleInOrgFile: boolean;
+  },
+): MapOf<BaseState> =>
   state.set("shouldShowTitleInOrgFile", action.shouldShowTitleInOrgFile);
 
-const setShouldLogIntoDrawer = (state, action) =>
+const setShouldLogIntoDrawer = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_SHOULD_LOG_INTO_DRAWER";
+    shouldLogIntoDrawer: boolean;
+  },
+): MapOf<BaseState> =>
   state.set("shouldLogIntoDrawer", action.shouldLogIntoDrawer);
 
-const setCloseSubheadersRecursively = (state, action) =>
+const setCloseSubheadersRecursively = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_CLOSE_SUBHEADERS_RECURSIVELY";
+    closeSubheadersRecursively: boolean;
+  },
+): MapOf<BaseState> =>
   state.set("closeSubheadersRecursively", action.closeSubheadersRecursively);
 
 /**
@@ -69,19 +156,49 @@ const setCloseSubheadersRecursively = (state, action) =>
  * default) indent the body text of headings according to the nesting level of
  * the heading.
  */
-const setShouldNotIndentOnExport = (state, action) =>
+const setShouldNotIndentOnExport = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_SHOULD_NOT_INDENT_ON_EXPORT";
+    shouldNotIndentOnExport: boolean;
+  },
+): MapOf<BaseState> =>
   state.set("shouldNotIndentOnExport", action.shouldNotIndentOnExport);
 
-const setHasUnseenChangelog = (state, action) =>
+const setHasUnseenChangelog = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_HAS_UNSEEN_CHANGELOG";
+    newHasUnseenChangelog: boolean;
+  },
+): MapOf<BaseState> =>
   state.set("hasUnseenChangelog", action.newHasUnseenChangelog);
 
-const setLastSeenChangelogHeader = (state, action) =>
+const setLastSeenChangelogHeader = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_LAST_SEEN_CHANGELOG_HEADER";
+    newLastSeenChangelogHash: string;
+  },
+): MapOf<BaseState> =>
   state.set("lastSeenChangelogHash", action.newLastSeenChangelogHash);
 
-const setLastViewedFile = (state, action) =>
-  state.set("lastViewedPath", action.lastViewedPath);
+const setLastViewedFile = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_LAST_VIEWED_FILE";
+    lastViewedPath: string;
+  },
+): MapOf<BaseState> => state.set("lastViewedPath", action.lastViewedPath);
 
-const setCustomKeybinding = (state, action) => {
+const setCustomKeybinding = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_CUSTOM_KEYBINDING";
+    keybindingName: string;
+    keybinding: string;
+  },
+): MapOf<BaseState> => {
   if (!state.get("customKeybindings")) {
     state = state.set("customKeybindings", Map());
   }
@@ -92,24 +209,52 @@ const setCustomKeybinding = (state, action) => {
   );
 };
 
-const restoreBaseSettings = (state, action) => {
+const restoreBaseSettings = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "RESTORE_BASE_SETTINGS";
+    newSettings: Record<string, string>;
+  },
+): MapOf<BaseState> => {
   if (!action.newSettings) {
     return state;
   }
   return applyCategorySettingsFromConfig(state, action.newSettings, "base");
 };
 
-const pushModalPage = (state, action) =>
-  state.update("modalPageStack", (stack) =>
-    !!stack ? stack.push(action.modalPage) : List([action.modalPage]),
+const pushModalPage = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "PUSH_MODAL_PAGE";
+    modalPage: ModalPage;
+  },
+): MapOf<BaseState> =>
+  state.update(
+    "modalPageStack",
+    (
+      stack: List<ModalPage>,
+    ) => (!!stack ? stack.push(action.modalPage) : List([action.modalPage])),
   );
 
-const popModalPage = (state) =>
-  state.update("modalPageStack", (stack) => (!!stack ? stack.pop() : stack));
+const popModalPage = (state: MapOf<BaseState>) =>
+  state.update(
+    "modalPageStack",
+    (
+      stack: List<ModalPage>
+    ) => (!!stack ? stack.pop() : stack),
+  );
 
-const clearModalStack = (state) => state.set("modalPageStack", List());
+const clearModalStack = (state: MapOf<BaseState>) =>
+  state.set("modalPageStack", List());
 
-const activatePopup = (state, action) => {
+const activatePopup = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "ACTIVATE_POPUP";
+    popupType: PopupType;
+    data: Record<string, string>;
+  },
+): MapOf<BaseState> => {
   const { data, popupType } = action;
 
   // Remember active popup in URL state for popups that are uniquely
@@ -123,6 +268,7 @@ const activatePopup = (state, action) => {
     );
   }
 
+  // fix later, should not use fromJS here
   return state.set(
     "activePopup",
     fromJS({
@@ -132,7 +278,7 @@ const activatePopup = (state, action) => {
   );
 };
 
-const closePopup = (state) => {
+const closePopup = (state: MapOf<BaseState>): MapOf<BaseState> => {
   window.history.replaceState(
     "",
     document.title,
@@ -141,41 +287,87 @@ const closePopup = (state) => {
   return state.set("activePopup", null);
 };
 
-const setIsLoading = (state, action) => {
+const setIsLoading = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_IS_LOADING";
+    isLoading: Set<string>;
+    path: string;
+  },
+): MapOf<BaseState> => {
   if (action.isLoading) {
-    return state.update("isLoading", (isLoading) => isLoading.add(action.path));
+    return state.update("isLoading", (isLoading: Set<string>): Set<string> =>
+      isLoading.add(action.path),
+    );
   } else {
-    return state.update("isLoading", (isLoading) =>
+    return state.update("isLoading", (isLoading: Set<string>): Set<string> =>
       isLoading.delete(action.path),
     );
   }
 };
 
-const setIsOnline = (state, action) => {
+const setIsOnline = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_IS_ONLINE";
+    online: boolean;
+  },
+): MapOf<BaseState> => {
   return state.set("online", action.online);
 };
 
-const setAgendaTimeframe = (state, action) =>
-  state.set("agendaTimeframe", action.agendaTimeframe);
+const setAgendaTimeframe = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_AGENDA_TIMEFRAME";
+    agendaTimeframe: AgendaTimeframe;
+  },
+): MapOf<BaseState> => state.set("agendaTimeframe", action.agendaTimeframe);
 
-const setFinderTab = (state, action) =>
-  state.set("finderTab", action.finderTab);
+const setFinderTab = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_FINDER_TAB";
+    finderTab: FinderTab;
+  },
+): MapOf<BaseState> => state.set("finderTab", action.finderTab);
 
-const setPreferEditRawValues = (state, action) =>
+const setPreferEditRawValues = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "PREFER_EDIT_RAW_VALUES";
+    preferEditRawValues: boolean;
+  },
+): MapOf<BaseState> =>
   state.set("preferEditRawValues", action.preferEditRawValues);
 
-const setColorScheme = (state, action) => {
+const setColorScheme = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_COLOR_SCHEME";
+    colorScheme: string;
+  },
+): MapOf<BaseState> => {
   return state.set("colorScheme", action.colorScheme);
 };
 
-const setTheme = (state, action) => {
+const setTheme = (
+  state: MapOf<BaseState>,
+  action: {
+    type: "SET_THEME";
+    theme: string;
+  },
+): MapOf<BaseState> => {
   return state.set("theme", action.theme);
 };
 
 /**
  * Reducer that is responsible for the "base" state slice.
  */
-export default (state = Map(), action) => {
+export default (
+  state: MapOf<BaseState> = Map({} as BaseState),
+  action: BaseAction,
+): MapOf<BaseState> => {
   switch (action.type) {
     case "SET_LOADING_MESSAGE":
       return setLoadingMessage(state, action);
