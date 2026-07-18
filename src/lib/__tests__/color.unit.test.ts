@@ -3,10 +3,11 @@ import { describe, expect, assert } from "vitest";
 import { over } from "lodash/fp";
 import type { ColorObject } from "color";
 import {
-  fastCheck2RandomRGBAs,
-  fastCheckRandomFloatBetweenZeroAndOne,
-  fastCheckRandomRGBA,
-} from "../../../test_helpers/testdatagenerators";
+  fcRandomFloatBetweenZeroAndOne,
+  fcRandomRGBA,
+  fcRandomFloatBetweenZeroAndOne,
+  fcTwoRandomRGBAs
+} from "../../../test_helpers/TestDataGenerators";
 import {
   createColorObject,
   convertRGBAIntoCSS,
@@ -21,7 +22,7 @@ describe("color unit tests", () => {
       g: testG,
       b: testB,
       alpha: testAlpha,
-    } = fastCheckRandomRGBA(fcGen);
+    } = fcRandomRGBA(fcGen);
     const actualColorObject = createColorObject(testR, testG, testB, testAlpha);
 
     expect(actualColorObject).toEqual({
@@ -38,7 +39,7 @@ describe("color unit tests", () => {
       g: testG,
       b: testB,
       alpha: testAlpha,
-    } = fastCheckRandomRGBA(fcGen);
+    } = fcRandomRGBA(fcGen);
     const actualCSS = convertRGBAIntoCSS([testR, testG, testB, testAlpha]);
 
     expect(actualCSS.startsWith("rgba")).toBeTruthy();
@@ -47,7 +48,7 @@ describe("color unit tests", () => {
   test.prop([fc.gen()])("interpolateColors", (fcGen) => {
     const [[testColorA, testColorB], testInterpolationFactor] = over<
       Array<ColorObject> | number
-    >([fastCheck2RandomRGBAs, fastCheckRandomFloatBetweenZeroAndOne])(
+    >([fcTwoRandomRGBAs, fcRandomFloatBetweenZeroAndOne])(
       fcGen,
     ) as [[ColorObject, ColorObject], number];
     const actualColorObject: ColorObject = interpolateColors(
@@ -67,7 +68,7 @@ describe("color unit tests", () => {
   test.prop([fc.gen()])("interpolateColorsAndReturnCSS", (fcGen) => {
     const [[testColorA, testColorB], testInterpolationFactor] = over<
       Array<ColorObject> | number
-    >([fastCheck2RandomRGBAs, fastCheckRandomFloatBetweenZeroAndOne])(
+    >([fcTwoRandomRGBAs, fcRandomFloatBetweenZeroAndOne])(
       fcGen,
     ) as [[ColorObject, ColorObject], number];
     const actualCSS: string = interpolateColorsAndReturnCSS(

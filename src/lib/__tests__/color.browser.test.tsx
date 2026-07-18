@@ -4,9 +4,9 @@ import { test, fc } from "@fast-check/vitest";
 import { describe, expect } from "vitest";
 import { cleanup, render } from "@testing-library/react";
 import { pipe } from "lodash/fp";
-import { themes } from "../constants";
+import { themes } from "../themes";
 import { loadTheme, getThemeFromThemeObject } from "../color";
-import { fastCheckRandomObjectKeyValuePair } from "../../../test_helpers/testdatagenerators";
+import { fastCheckRandomObjectKeyValuePair } from "../../../test_helpers/TestDataGenerators";
 
 describe("color test suite", async () => {
   const testThemes: Array<string> = Object.keys(themes);
@@ -35,7 +35,6 @@ describe("color test suite", async () => {
               document.documentElement.style.getPropertyValue(
                 testThemePropertyName,
               );
-            console.log(actualThemePropertyValue, expectedThemePropertyValue);
             expect(actualThemePropertyValue).toBe(expectedThemePropertyValue);
           },
         )

@@ -12,12 +12,13 @@ import {
   identity,
   map,
   shuffle,
-  repeat,
+  zipObject,
   size,
   concat,
   subtract,
   first,
 } from "lodash/fp";
+import type { RGBA } from "../src/types";
 import {
   unfold,
   unfoldAndShuffleArray,
@@ -101,6 +102,14 @@ export const fcRandomObjectValue = curry(
   },
 );
 
+export const fastCheckRandomObjectKeyValuePair = curry(
+  <T>(fcGen: fc.GeneratorValue, object: Record<string, T>): [string, T] => {
+    const key: string = fcRandomObjectKey(fcGen, object)
+    const val: T = object[key]
+    return [key, val]
+  },
+);
+
 export const fcNRandomArrayIndicesAsIntegers = curry(
   (
     count: number,
@@ -135,7 +144,7 @@ export const fcRandomIntegerInRange = curry(
     fcGen: fc.GeneratorValue,
     [rangeMin, rangeMax]: [number, number],
   ): number => {
-    if (rangeMin <= rangeMax) return rangeMin
+    if (rangeMin >= rangeMax) return rangeMin
     return fcGen(fc.integer, { min: rangeMin, max: minusOne(rangeMax) });
   },
 );
@@ -556,3 +565,26 @@ export const fcGenerateRandomOrgHeadingAsString =
 export const fcRandomInBufferSetting = partialRight(fcShuffledSubarray, [
   TESTINBUFFERSETTINGS,
 ]);
+
+export const fcRandomRGBArray = (fcGen: fc.GeneratorValue): [number, number, number] => {
+  return unfold((_: number): number => fcRandomIntegerInRange(fcGen, [0,255]),3)
+}
+
+
+export const fcRandomRGBA = (fcGen: fc.GeneratorValue): RGBA => {
+  const [r, g, b] = fcRandomRGBArray(fcGen)
+  const alpha = fcRandomFloatBetweenZeroAndOne(fcGen)
+  return {
+    r,
+    g,
+    b,
+    alpha
+  }
+}
+
+
+export const fcNLengthArrayOfRandomRGBAs = curry((count: number, fcGen: fc.GeneratorValue): Array<RGBA> => {
+  return unfold((_: number): RGBA => fcRandomRGBA(fcGen), count)
+})
+
+export const fcTwoRandomRGBAs = fcNLengthArrayOfRandomRGBAs(2)

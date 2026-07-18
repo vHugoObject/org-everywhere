@@ -123,7 +123,7 @@ export const convertArraysToSetsAndAssertSubset = pipe([
 
 export const assertArrayOfIntegersInRangeInclusive = curry(
   (range: [number, number], integers: Array<number>) => {
-    map(assertIntegerInRangeInclusive(range))(integers);
+    forEach(assertIntegerInRangeInclusive(range))(integers);
   },
 );
 
@@ -136,7 +136,7 @@ export const assertIntegerInRangeExclusive = curry(
 
 export const assertArrayOfIntegersInRangeExclusive = curry(
   (range: [number, number], integers: Array<number>) => {
-    map(assertIntegerInRangeExclusive(range))(integers);
+    forEach(assertIntegerInRangeExclusive(range))(integers);
   },
 );
 

@@ -5,6 +5,8 @@ import {
   assertIntegerInRangeInclusive,
   convertArraysToSetsAndAssertStrictEqual,
   convertArraysToSetsAndAssertIsSubset,
+  assertArrayOfIntegersInRangeInclusive,
+  assertIntegerInRangeExclusive
 } from "../Asserters";
 import {
   fcRandomIntegerInRange,
@@ -13,7 +15,9 @@ import {
   fcRandomCharacterGenerator,
   fcShuffledSubarray,
   fcShuffledArray,
-  fcNLengthUniqueStringArrayGenerator
+  fcNLengthUniqueStringArrayGenerator,
+  fcRandomRGBA,
+  fastCheckRandomObjectKeyValuePair
 } from "../TestDataGenerators.ts";
 
 describe("TestDataGenerators suite", () => {
@@ -100,5 +104,29 @@ describe("TestDataGenerators suite", () => {
         expect(actualStringArray.length).toEqual(testStringLength);
       },
     );
+  });
+
+  describe("Random Selection suite", () => {
+    test.prop([fc.map(fc.string(), fc.anything(), {minKeys: 1}), fc.gen()])(
+      "fastCheckRandomObjectKeyValuePair",
+      (testMap, fcGen) => {
+	const testObj: Record<string, any> = Object.fromEntries(testMap)
+	const [actualKey, actualValue] = fastCheckRandomObjectKeyValuePair(fcGen, testObj)
+	expect(testObj[actualKey]).toBe(actualValue)
+      },
+    );
+
+  });
+
+  describe("Color generators suite", () => {
+    test.prop([fc.gen()])(
+      "fcRandomRGBA",
+      (fcGen) => {
+	const {r: actualR, g: actualG, b: actualB, alpha: actualAlpha} = fcRandomRGBA(fcGen)
+	assertArrayOfIntegersInRangeInclusive([0, 255], [actualR, actualG, actualB])
+	assertIntegerInRangeExclusive([0,1], actualAlpha)
+      },
+    );
+
   });
 });

@@ -6,7 +6,13 @@ export interface RGB {
   r: number;
   g: number;
   b: number;
-  a?: number;
+}
+
+export interface RGBA {
+  r: number;
+  g: number;
+  b: number;
+  alpha: number;
 }
 
 export type AgendaTimeframe = "Week" | "Day" | "Month";
