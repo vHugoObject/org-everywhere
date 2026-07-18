@@ -1,5 +1,14 @@
 import { List, Map, fromJS, type MapOf, Set } from "immutable";
-import type { BaseState, BaseAction, DelayUnit, BulletStyle, ModalPage, PopupType, AgendaTimeframe, FinderTab } from "../types";
+import type {
+  BaseState,
+  BaseAction,
+  DelayUnit,
+  BulletStyle,
+  ModalPage,
+  PopupType,
+  AgendaTimeframe,
+  FinderTab,
+} from "../types";
 import { applyCategorySettingsFromConfig } from "../util/settings_persister";
 
 const setLoadingMessage = (
@@ -229,19 +238,13 @@ const pushModalPage = (
     modalPage: ModalPage;
   },
 ): MapOf<BaseState> =>
-  state.update(
-    "modalPageStack",
-    (
-      stack: List<ModalPage>,
-    ) => (!!stack ? stack.push(action.modalPage) : List([action.modalPage])),
+  state.update("modalPageStack", (stack: List<ModalPage>) =>
+    !!stack ? stack.push(action.modalPage) : List([action.modalPage]),
   );
 
 const popModalPage = (state: MapOf<BaseState>) =>
-  state.update(
-    "modalPageStack",
-    (
-      stack: List<ModalPage>
-    ) => (!!stack ? stack.pop() : stack),
+  state.update("modalPageStack", (stack: List<ModalPage>) =>
+    !!stack ? stack.pop() : stack,
   );
 
 const clearModalStack = (state: MapOf<BaseState>) =>
@@ -296,12 +299,14 @@ const setIsLoading = (
   },
 ): MapOf<BaseState> => {
   if (action.isLoading) {
-    return state.update("isLoading", (isLoading: Set<string>): Set<string> =>
-      isLoading.add(action.path),
+    return state.update(
+      "isLoading",
+      (isLoading: Set<string>): Set<string> => isLoading.add(action.path),
     );
   } else {
-    return state.update("isLoading", (isLoading: Set<string>): Set<string> =>
-      isLoading.delete(action.path),
+    return state.update(
+      "isLoading",
+      (isLoading: Set<string>): Set<string> => isLoading.delete(action.path),
     );
   }
 };

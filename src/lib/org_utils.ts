@@ -824,7 +824,7 @@ export const timestampWithId = (headers, timestampId) =>
     )
     .find((result) => result);
 
-export const customFormatDistanceToNow = (datetime) => {
+export const customFormatDistanceToNow = (datetime: Date) => {
   return formatDistanceToNow(datetime, { addSuffix: true });
 };
 

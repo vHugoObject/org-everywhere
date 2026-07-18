@@ -22,6 +22,7 @@ import {
   endsWith,
 } from "lodash/fp";
 import type {
+  OrgTimestampType,
   OrgTimestampPart,
   OrgSimpleToken,
   OrgRecursiveToken,
@@ -37,7 +38,6 @@ import type {
   OrgRawTableToken,
   OrgRawListContentToken,
   OrgRawListHeaderToken,
-  OrgTimestampElement,
   OrgPropertyListItem,
 } from "../types";
 import { ORGCHECKBOXSTATEMAPPING } from "./constants";
@@ -137,7 +137,7 @@ const planningRegexCaptureGroupsOfType = [2, 21, 40]; // depends on timestampReg
 const timestampFromRegexMatch = (
   match: RegExpExecArray | RegExpMatchArray,
   partIndices: Array<number>,
-): OrgTimestamp | null => {
+): OrgTimestampPart | null => {
   const [
     typeBracket,
     year,
@@ -635,20 +635,20 @@ export const parseRawText = (
 export const _parsePlanningItems = (
   rawText: string,
 ): {
-  planningItems: List<MapOf<OrgTimestamp>>;
+  planningItems: List<MapOf<OrgTimestampPart>>;
   strippedDescription: string;
 } => {
   const planningMatch: RegExpMatchArray | null = rawText.match(planningRegex);
 
   const planningItems = fromJS(
     planningRegexCaptureGroupsOfType
-      .map((planningTypeIndex: number): null | MapOf<OrgTimestamp> => {
+      .map((planningTypeIndex: number): null | MapOf<OrgTimestampPart> => {
         const type = planningMatch && planningMatch[planningTypeIndex];
         if (!type) {
           return null;
         }
 
-        const timestamp: OrgTimestamp | null = timestampFromRegexMatch(
+        const timestamp: OrgTimestampPart | null = timestampFromRegexMatch(
           planningMatch,
           range(planningTypeIndex + 1, planningTypeIndex + 1 + 17),
         );
@@ -678,12 +678,12 @@ const createOrUpdateTimestamp = ({
   timestamp,
   id,
 }: {
-  type: string;
-  timestamp: OrgTimestamp;
+  type: OrgTimestampType;
+  timestamp: OrgTimestampPart;
   id?: number;
-}): MapOf<OrgTimestamp> => {
-  const orgTimestamp: OrgTimestamp = {
-    type: "timestamp",
+}): MapOf<OrgTimestampPart> => {
+  const orgTimestamp: OrgTimestampPart = {
+    type,
     timestamp: Map(timestamp),
     id: id || generateId(),
   };

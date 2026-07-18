@@ -10,7 +10,9 @@ import type {
 } from "../types";
 import { parseFile, resetFileDisplay, setPath } from "./org";
 
-export const setLoadingMessage = (loadingMessage: string | null): BaseAction => ({
+export const setLoadingMessage = (
+  loadingMessage: string | null,
+): BaseAction => ({
   type: "SET_LOADING_MESSAGE",
   loadingMessage,
 });
@@ -19,7 +21,10 @@ export const hideLoadingMessage = (): BaseAction => ({
   type: "HIDE_LOADING_MESSAGE",
 });
 
-export const setIsLoading = (isLoading: Set<string>, path: string): BaseAction => ({
+export const setIsLoading = (
+  isLoading: Set<string>,
+  path: string,
+): BaseAction => ({
   type: "SET_IS_LOADING",
   isLoading,
   path,

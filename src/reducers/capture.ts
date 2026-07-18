@@ -14,12 +14,14 @@ import { applyCaptureSettingsFromConfig } from "../util/settings_persister";
 const indexOfTemplateWithId = (
   templates: List<MapOf<OrgCaptureTemplate>>,
   templateId: number,
-): MapOf<OrgCaptureTemplate> | undefined =>
+): number =>
   templates.findIndex(
     (template: MapOf<OrgCaptureTemplate>) => template.get("id") === templateId,
   );
 
-const addNewEmptyCaptureTemplate = (state: MapOf<OrgCaptureState>) => {
+const addNewEmptyCaptureTemplate = (
+  state: MapOf<OrgCaptureState>,
+): MapOf<OrgCaptureState> => {
   if (!state.get("captureTemplates")) {
     state = state.set("captureTemplates", List());
   }
