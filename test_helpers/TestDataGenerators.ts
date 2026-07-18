@@ -40,7 +40,7 @@ import {
   TESTUPPERALPHACHARACTERRANGE,
 } from "./Constants";
 
-export const fcGenerateValidDate = (fcGen: fc.GeneratorValue): Date => {
+export const fcGenerateValidJSDateObject = (fcGen: fc.GeneratorValue): Date => {
   return fcGen(fc.date, {
     min: new Date("2000-01-01T00:00:00.000Z"),
     max: new Date("3000-12-31T23:59:59.999Z"),
@@ -48,21 +48,26 @@ export const fcGenerateValidDate = (fcGen: fc.GeneratorValue): Date => {
   });
 };
 
-export const fcNRandomItemsFromArray = curry(
-  <T>(count: number, fcGen: fc.GeneratorValue, array: Array<T>): Array<T> => {
-    return fcGen(fc.shuffledSubarray, array, {
-      minLength: count,
-      maxLength: count,
-    });
-  },
-);
+export const fcGenerateValidJSDateObjectString = pipe([
+  fcGenerateValidJSDateObject,
+  (x: Date): string => x.toDateString(),
+]);
 
 // don't use with functions
-export const fcShuffledSubarray = curry(
+export const fcShuffledArray = curry(
   <T>(fcGen: fc.GeneratorValue, array: Array<T>): Array<T> => {
     return fcGen(fc.shuffledSubarray, array, {
       minLength: array.length,
       maxLength: array.length,
+    });
+  },
+);
+
+export const fcShuffledSubarray = curry(
+  <T>(count: number, fcGen: fc.GeneratorValue, array: Array<T>): Array<T> => {
+    return fcGen(fc.shuffledSubarray, array, {
+      minLength: count,
+      maxLength: count,
     });
   },
 );
@@ -82,7 +87,7 @@ export const fcRandomItemFromArray = curry(
   },
 );
 
-export const fcGetTwoRandomItemsFromArray = fcNRandomItemsFromArray(2);
+export const fcGetTwoRandomItemsFromArray = fcShuffledSubarray(2);
 
 export const fcRandomObjectKey = curry(
   (fcGen: fc.GeneratorValue, object: Record<string, any>): string => {
@@ -102,11 +107,9 @@ export const fcNRandomArrayIndicesAsIntegers = curry(
     fcGen: fc.GeneratorValue,
     array: Array<any>,
   ): Array<number> => {
-    return pipe([
-      Object.keys,
-      fcNRandomItemsFromArray(count, fcGen),
-      map(parseInt),
-    ])(array);
+    return pipe([Object.keys, fcShuffledSubarray(count, fcGen), map(parseInt)])(
+      array,
+    );
   },
 );
 
@@ -132,6 +135,7 @@ export const fcRandomIntegerInRange = curry(
     fcGen: fc.GeneratorValue,
     [rangeMin, rangeMax]: [number, number],
   ): number => {
+    if (rangeMin <= rangeMax) return rangeMin
     return fcGen(fc.integer, { min: rangeMin, max: minusOne(rangeMax) });
   },
 );
@@ -549,6 +553,6 @@ export const fcGenerateOrgHeadingAsString = curry(
 export const fcGenerateRandomOrgHeadingAsString =
   defaultConvertFCGenIntoRandomGen(fcGenerateOrgHeadingAsString);
 
-export const fcRandomInBufferSetting = partialRight(fcNRandomItemsFromArray, [
+export const fcRandomInBufferSetting = partialRight(fcShuffledSubarray, [
   TESTINBUFFERSETTINGS,
 ]);
