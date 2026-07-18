@@ -34,6 +34,7 @@ import {
   ImportSpecifierStructure,
   WriterFunction,
   OptionalKind,
+  VariableStatementStructure,
 } from "ts-morph";
 
 // initialize
@@ -237,4 +238,31 @@ const runImmutableRefactor = async (): Promise<void> => {
   await project.save();
 };
 
-await runImmutableRefactor();
+//await runImmutableRefactor();
+
+const combineTwoFiles = async (
+  file1Path: string,
+  file2Path: string,
+): Promise<void> => {
+  const project = new Project({});
+  const file1: SourceFile = project.addSourceFileAtPath(file1Path);
+  const file2: SourceFile = project.addSourceFileAtPath(file2Path);
+
+  file2.forEachChild((child: Node): void => {
+    if (!Node.isVariableStatement(child)) return;
+    const childDeclaration = child.getFirstDescendantByKind(
+      SyntaxKind.VariableDeclaration,
+    );
+    if (
+      !childDeclaration ||
+      !file1.getVariableDeclaration(childDeclaration.getName())
+    )
+      file1.addVariableStatement(child.getStructure());
+  });
+
+  file1.fixMissingImports();
+  await file2.deleteImmediately();
+  await project.save();
+};
+
+await combineTwoFiles("test_helpers/Asserters.ts", "test_helpers/asserters.ts");
