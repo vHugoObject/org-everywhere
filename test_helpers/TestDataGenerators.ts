@@ -16,6 +16,7 @@ import {
   size,
   concat,
   subtract,
+  first,
 } from "lodash/fp";
 import {
   unfold,
@@ -114,9 +115,11 @@ export const fcGetRandomArrayChunk = curry(
     fcGen: fc.GeneratorValue,
     [testArray, testChunkSize]: [Array<T>, number],
   ): fc.Arbitrary<T> => {
-    return pipe([chunk(testChunkSize), fcRandomItemFromArrayWithIndex(fcGen)])(
-      testArray,
-    );
+    return pipe([
+      chunk(testChunkSize),
+      fcRandomItemFromArrayWithIndex(fcGen),
+      first,
+    ])(testArray);
   },
 );
 
@@ -213,7 +216,14 @@ export const fcCallRandomFCGen = curry(
 
 export const fcRandomArrayChunkSize = curry(
   <T>(fcGen: fc.GeneratorValue, array: Array<T>): number => {
-    return pipe([size, concat([1]), fcRandomIntegerInRange(fcGen)])(array);
+    return fcRandomIntegerInRange(fcGen, [1, size(array)]);
+  },
+);
+
+export const fcRandomArrayChunkOfRandomSize = curry(
+  <T>(fcGen: fc.GeneratorValue, array: Array<T>): number => {
+    const chunkSize = fcRandomArrayChunkSize(fcGen, array);
+    return fcGetRandomArrayChunk(fcGen, [array, chunkSize]);
   },
 );
 

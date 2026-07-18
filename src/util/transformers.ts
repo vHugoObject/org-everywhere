@@ -35,9 +35,12 @@ import {
   partialRight,
   floor,
   multiply,
+  compact,
 } from "lodash/fp";
 import { addDays, subDays, addWeeks, addMonths, addYears } from "date-fns/fp";
 import type { ReadonlyNonEmptyArray } from "fp-ts/ReadonlyNonEmptyArray";
+
+const filterMap = curry(pipe([map, compact]));
 
 export const mapSum = map(sum);
 
@@ -393,3 +396,16 @@ export const addOneYear = addYears(1);
 
 export const isUpperAlphaCharacter = (x: string): boolean => !!x.match(/[A-Z]/);
 export const everyCharacterIsUpperAlpha = every(isUpperAlphaCharacter);
+
+export const reduceReplaceAll = (
+  valuesToReplace: Array<string>,
+  strToEdit: string,
+): string => {
+  return reduce(
+    (currStrToEdit: string, valueToReplace: string): string => {
+      return currStrToEdit.replaceAll(valueToReplace, "");
+    },
+    strToEdit,
+    valuesToReplace,
+  );
+};

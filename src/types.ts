@@ -29,7 +29,7 @@ export type OrgTodoKeywordSet = {
 };
 
 export type OrgFileConfig = {
-  todoKeywordSets: List<OrgTodoKeywordSet>;
+  todoKeywordSets: List<MapOf<OrgTodoKeywordSet>>;
   fileConfigLines: List<string>;
 };
 
@@ -181,21 +181,22 @@ export type OrgClockString = {
   secondTimestamp: OrgTimestampPart | null;
 };
 
-type OrgTimestampType =
+export type OrgTimestampType =
   | "TIMESTAMP_TITLE"
   | "TIMESTAMP_DESCRIPTION"
   | "TIMESTAMP_LOG_NOTES";
+
 export type OrgTimestamp = {
   id: number;
   type: OrgTimestampType;
-  timestamp: MapOf<OrgTimestamp>;
+  timestamp: MapOf<OrgTimestampPart>;
 };
 
 export type OrgPlanningItem = {};
 
 export type OrgPropertyListItem = {
   property: string;
-  value: OrgText | OrgTimestamp | List<OrgElement> | null;
+  value: OrgText | OrgTimestamp | List<MapOf<OrgElement>> | null;
   id: number;
 };
 
@@ -203,7 +204,7 @@ export type OrgCheckboxState = "unchecked" | "checked" | "partial";
 
 export type OrgListItem = {
   id: number;
-  titleLine: List<OrgElement>;
+  titleLine: List<MapOf<OrgElement>>;
   contents: any;
   forceNumber: string | null;
   isCheckbox: boolean;
@@ -213,7 +214,7 @@ export type OrgListItem = {
 export type OrgList = {
   type: "list";
   id: number;
-  items: List<OrgListItem>;
+  items: List<MapOf<OrgListItem>>;
   bulletCharacter: string;
   numberTerminatorCharacter: string | null;
   isOrdered: boolean;
@@ -222,39 +223,43 @@ export type OrgList = {
 export type OrgTableCell = {
   id: number;
   type: "table-cell";
-  contents: List<string | OrgInlineMarkup>;
+  contents: List<string | MapOf<OrgInlineMarkup>>;
   rawContents: string;
 };
 
 export type OrgTableRow = {
   id: number;
   type: "table-row";
-  contents: List<OrgTableCell>;
+  contents: List<MapOf<OrgTableCell>>;
 };
 
 export type OrgTable = {
   id: number;
   type: "table";
-  contents: List<OrgTableRow>;
+  contents: List<MapOf<OrgTableRow>>;
   columnProperties: List<any>;
 };
 
+export type OrgTitle = {
+  id: number;
+};
+
 export type OrgTitleLine = {
-  title: string;
+  title: MapOf<OrgTitle>;
   rawTitle: string;
   todoKeyword: string;
   tags: List<string>;
 };
 
 export type OrgHeadline = {
-  titleLine: OrgTitleLine;
+  titleLine: MapOf<OrgTitleLine>;
   rawDescription: string;
   description: List<any>;
   opened: boolean;
   id: number;
   nestingLevel: number;
   planningItems: List<any>;
-  propertyListItems: List<OrgPropertyListItem>;
+  propertyListItems: List<MapOf<OrgPropertyListItem>>;
   logNotes: List<any>;
   logBookEntries: List<any>;
 };
@@ -279,11 +284,21 @@ export type OrgElement =
     };
 
 export type OrgFile = {
-  headers: List<OrgHeadline>;
+  headers: List<MapOf<OrgHeadline>>;
   activeClocks: number;
   todoKeywordSets: List<MapOf<OrgTodoKeywordSet>>;
+  isDirty: boolean;
+  lastSyncAt: Date;
   fileConfigLines: List<string>;
   linesBeforeHeadings: List<string>;
+  narrowedHeaderId: number;
+  selectedHeaderId: number;
+  selectedHeaderIndex: number;
+  editMode: EditModeType;
+  selectedTableId: number;
+  selectedDescriptionItemIndex: number;
+  selectedTableCellId: number;
+  selectedListItemId: number | null;
 };
 
 export type ClientType = "WebDAV" | "Dropbox" | "GitLab";
@@ -365,7 +380,7 @@ export type Search = {
 };
 
 export type Bookmark = {
-  search: List<Search>;
+  search: List<MapOf<Search>>;
   "task-list": List<string>;
   refile: List<string>;
 };
@@ -1044,7 +1059,7 @@ export type OrgCaptureState = {
   captureTemplates: List<MapOf<OrgCaptureTemplate>>;
 };
 
-export type Popup = MapOf<{ type: PopupType; data: Map<string, string> }>
+export type Popup = { type: PopupType; data: Map<string, string> };
 
 export type BaseState = {
   loadingMessage: string | null;
@@ -1068,7 +1083,7 @@ export type BaseState = {
   lastViewedPath: string;
   customKeybindings: Map<string, string>;
   modalPageStack: List<ModalPage>;
-  activePopup: Popup | null;
+  activePopup: MapOf<Popup> | null;
   isLoading: Set<string>;
   online: boolean;
   agendaTimeframe: AgendaTimeframe;
@@ -1079,29 +1094,13 @@ export type BaseState = {
 };
 
 export type OrgState = {
-  files: List<OrgFile>;
-  search: Search;
-  headers: List<OrgHeadline>;
-  narrowedHeaderId: number;
-  selectedHeaderId: number;
-  selectedHeaderIndex: number;
-  todoKeywordSets: OrgTodoKeywordSet;
-  editMode: EditModeType;
-  linesBeforeHeadings: List<string>;
-  opennessState: boolean;
-  isDirty: boolean;
-  selectedTableId: number;
-  selectedDescriptionItemIndex: number;
-  selectedTableCellId: number;
-  pendingCapture: PendingCapture;
-  checkboxState: OrgCheckboxState;
-  titleLine: any;
-  selectedListItemId: number;
-  lastSyncAt: Date;
-  activeClocks: number;
   path: string;
-  fileSettings: List<FileSetting>;
-  bookmarks: List<Bookmark>;
+  files: List<MapOf<OrgFile>>;
+  search: Search;
+  opennessState: boolean;
+  pendingCapture: MapOf<PendingCapture>;
+  fileSettings: List<MapOf<FileSetting>>;
+  bookmarks: List<string>;
   orgFileErrorMessage: string;
   showClockDisplay: boolean;
   fileConfigLines: List<string>;
