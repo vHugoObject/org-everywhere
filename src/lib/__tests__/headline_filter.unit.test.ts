@@ -1,14 +1,14 @@
 /* eslint jest/expect-expect: ["error", { "assertFunctionNames": ["expect", "expectComputation", "expectMatch"] }] */
 /* eslint no-unused-vars: ["error", { "varsIgnorePattern": "^gics(Or)?$" }] */
-
-import { parseOrg } from "./parse_org";
-import readFixture from "../../test_helpers/index";
+import { describe, expect } from "vitest";
+import { parseOrg } from "../parse_org";
+import readFixture from "../../../test_helpers/index";
 import {
   isMatch,
   computeCompletions,
   computeCompletionsForDatalist,
-} from "./headline_filter";
-import headline_filter_parser from "./headline_filter_parser";
+} from "../headline_filter";
+import headline_filter_parser from "../headline_filter_parser";
 
 // Helper functions
 // Generate tag filter

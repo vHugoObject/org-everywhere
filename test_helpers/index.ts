@@ -22,7 +22,7 @@ export const renderWithRouter = (ui: React.ReactNode, { route = "/" } = {}) => {
   };
 };
 
-export default function readFixture(name) {
+export default function readFixture(name: string) {
   return fs
     .readFileSync(path.join(__dirname, `./fixtures/${name}.org`))
     .toString();
