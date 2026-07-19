@@ -297,13 +297,13 @@ export type OrgFile = {
   lastSyncAt: Date;
   fileConfigLines: List<string>;
   linesBeforeHeadings: List<string>;
-  narrowedHeaderId: number;
+  narrowedHeaderId: number | null;
   selectedHeaderId: number;
   selectedHeaderIndex: number;
-  editMode: EditModeType;
+  editMode: EditModeType | null;
   selectedTableId: number;
   selectedDescriptionItemIndex: number;
-  selectedTableCellId: number;
+  selectedTableCellId: number | null;
   selectedListItemId: number | null;
 };
 
@@ -854,6 +854,7 @@ export type UpdateOrgCaptureAction = {
   fieldPath: string;
   newValue: string;
 };
+
 export type OrgCaptureUpdateAction =
   | {
       type: "ADD_NEW_TEMPLATE_ORG_FILE_AVAILABILITY";

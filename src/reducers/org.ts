@@ -1,4 +1,5 @@
 import { fromJS, List, Map, type MapOf } from "immutable";
+import { match, P } from "ts-pattern";
 import { isEmpty, times } from "lodash";
 import {
   hasActiveClock,
@@ -128,7 +129,7 @@ const openHeader = (
     type: "OPEN_HEADER";
     headerId: number;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const headers = state.get("headers");
   const headerIndex = indexOfHeaderWithId(headers, action.headerId);
 
@@ -142,7 +143,7 @@ const toggleHeaderOpened = (
     headerId: number;
     closeSubheadersRecursively: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const headers = state.get("headers");
 
   const { header, headerIndex } = indexAndHeaderWithId(
@@ -174,7 +175,7 @@ const selectHeader = (
     type: "SELECT_HEADER";
     headerId: number;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   return state.set("selectedHeaderId", action.headerId);
 };
 
@@ -184,7 +185,7 @@ const selectHeaderIndex = (
     type: "SELECT_HEADER_INDEX";
     headerIndex: number;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   return state.set("selectedHeaderIndex", action.headerIndex);
 };
 
@@ -194,7 +195,7 @@ const openParentsOfHeader = (
     type: "OPEN_PARENTS_OF_HEADER";
     headerId: number;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   let headers = state.get("headers");
   const { headerId } = action;
 
@@ -311,7 +312,7 @@ const advanceTodoState = (
     dirtying: boolean;
     timestamp: MapOf<OrgTimestamp>;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const { headerId, logIntoDrawer, timestamp } = action;
   const existingHeaderId = headerId || state.get("selectedHeaderId");
   if (!existingHeaderId) {
@@ -373,7 +374,7 @@ const setTodoState = (
     dirtying: boolean;
     timestamp: MapOf<OrgTimestamp>;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const { headerId, logIntoDrawer, newTodoState, timestamp } = action;
   const existingHeaderId = headerId || state.get("selectedHeaderId");
   if (!existingHeaderId) {
@@ -437,9 +438,10 @@ const enterEditMode = (
     type: "ENTER_EDIT_MODE";
     editModeType: EditModeType;
   },
-): MapOf<OrgState> => state.set("editMode", action.editModeType);
+): MapOf<OrgFile> => state.set("editMode", action.editModeType);
 
-const exitEditMode = (state: MapOf<OrgFile>) => state.set("editMode", null);
+const exitEditMode = (state: MapOf<OrgFile>): MapOf<OrgFile> =>
+  state.set("editMode", null);
 
 const updateHeaderTitle = (
   state: MapOf<OrgFile>,
@@ -448,7 +450,7 @@ const updateHeaderTitle = (
     newRawTitle: string;
     headerId: number;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const headers = state.get("headers");
   const headerIndex = indexOfHeaderWithId(headers, action.headerId);
   const todoKeywordSets = state.get("todoKeywordSets");
@@ -462,7 +464,9 @@ const updateHeaderTitle = (
 
   state = state.updateIn(
     ["headers", headerIndex, "planningItems"],
-    (planningItems: List<MapOf<OrgPlanningItem>>) =>
+    (
+      planningItems: List<MapOf<OrgPlanningItem>>,
+    ): List<MapOf<OrgPlanningItem>> =>
       updatePlanningItems(
         planningItems,
         "TIMESTAMP_TITLE",
@@ -481,13 +485,13 @@ const updateHeaderDescription = (
     newRawDescription: string;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const headers = state.get("headers");
   const headerIndex = indexOfHeaderWithId(headers, action.headerId);
 
   return state.updateIn(
     ["headers", headerIndex],
-    (header: MapOf<OrgHeadline>) =>
+    (header: MapOf<OrgHeadline>): MapOf<OrgHeadline> =>
       _updateHeaderFromDescription(header, action.newRawDescription),
   );
 };
@@ -499,7 +503,7 @@ const addHeader = (
     headerId: number;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const headers = state.get("headers");
   const { header, headerIndex } = indexAndHeaderWithId(
     headers,
@@ -532,7 +536,7 @@ const duplicateHeader = (
     headerId: number;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const headers = state.get("headers");
   const { header: originalHeader, headerIndex: originalHeaderIndex } =
     indexAndHeaderWithId(headers, action.headerId);
@@ -558,7 +562,7 @@ const duplicateHeader = (
   );
 };
 
-const createFirstHeader = (state: MapOf<OrgFile>) => {
+const createFirstHeader = (state: MapOf<OrgFile>): MapOf<OrgFile> => {
   let newHeader = newHeaderWithTitle(
     "First header",
     1,
@@ -585,7 +589,7 @@ const selectNextSiblingHeader = (
     type: "SELECT_NEXT_SIBLING_HEADER";
     headerId: number;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const headers = state.get("headers");
   const { header, headerIndex } = indexAndHeaderWithId(
     headers,
@@ -605,7 +609,7 @@ const selectNextSiblingHeader = (
   return state.set("selectedHeaderId", nextSibling.get("id"));
 };
 
-const selectNextVisibleHeader = (state: MapOf<OrgFile>) => {
+const selectNextVisibleHeader = (state: MapOf<OrgFile>): MapOf<OrgFile> => {
   const headers = state.get("headers");
 
   if (state.get("selectedHeaderId") === undefined) {
@@ -626,7 +630,7 @@ const selectNextVisibleHeader = (state: MapOf<OrgFile>) => {
   return state.set("selectedHeaderId", nextVisibleHeader.get("id"));
 };
 
-const selectPreviousVisibleHeader = (state: MapOf<OrgFile>) => {
+const selectPreviousVisibleHeader = (state: MapOf<OrgFile>): MapOf<OrgFile> => {
   const headers = state.get("headers");
   const headerIndex = indexOfHeaderWithId(
     headers,
@@ -652,7 +656,7 @@ const removeHeader = (
     headerId: number;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   let headers = state.get("headers");
   const headerIndex = indexOfHeaderWithId(headers, action.headerId);
 
@@ -685,7 +689,7 @@ const moveHeaderUp = (
     headerId: number;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   let headers = state.get("headers");
   const headerIndex = indexOfHeaderWithId(headers, action.headerId);
 
@@ -713,7 +717,7 @@ const moveHeaderDown = (
     headerId: number;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   let headers = state.get("headers");
   const { header, headerIndex } = indexAndHeaderWithId(
     headers,
@@ -752,7 +756,7 @@ const moveHeaderLeft = (
     headerId: number;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const headers = state.get("headers");
   const headerIndex = indexOfHeaderWithId(headers, action.headerId);
 
@@ -774,7 +778,7 @@ const moveHeaderRight = (
     headerId: number;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const headers = state.get("headers");
   const headerIndex = indexOfHeaderWithId(headers, action.headerId);
 
@@ -797,7 +801,7 @@ const moveSubtreeLeft = (
     headerId: number;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const headers = state.get("headers");
   const { header, headerIndex } = indexAndHeaderWithId(
     headers,
@@ -828,7 +832,7 @@ const moveSubtreeRight = (
     headerId: number;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const headers = state.get("headers");
   const headerIndex = indexOfHeaderWithId(headers, action.headerId);
 
@@ -976,7 +980,10 @@ const refileSubtree = (
 // Add a log note to the selected header. This can be any type of log
 // note as defined in the Emacs Org mode variable
 // `org-log-note-headings`.
-const addNoteGeneric = (state: MapOf<OrgState>, action): MapOf<OrgState> => {
+const addNoteGeneric = (
+  state: MapOf<OrgFile>,
+  action: { noteText: string },
+): MapOf<OrgFile> => {
   const { noteText } = action;
 
   const headerId = state.get("selectedHeaderId");
@@ -1008,7 +1015,7 @@ const addNote = (
     currentDate: Date;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const { inputText, currentDate } = action;
   // Wrap line at 70 characters, see Emacs `fill-column` in "Insert
   // note" window (C-c C-z)
@@ -1032,11 +1039,11 @@ const narrowHeader = (
     type: "NARROW_HEADER";
     headerId: number;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   return state.set("narrowedHeaderId", action.headerId);
 };
 
-const widenHeader = (state: MapOf<OrgFile>) =>
+const widenHeader = (state: MapOf<OrgFile>): MapOf<OrgFile> =>
   state.set("narrowedHeaderId", null);
 
 const applyOpennessState = (
@@ -1092,7 +1099,7 @@ const setSelectedTableId = (
     type: "SET_SELECTED_TABLE_ID";
     tableId: number;
   },
-): MapOf<OrgState> => state.set("selectedTableId", action.tableId);
+): MapOf<OrgFile> => state.set("selectedTableId", action.tableId);
 
 const setSelectedDescriptionItemIndex = (
   state: MapOf<OrgFile>,
@@ -1100,7 +1107,7 @@ const setSelectedDescriptionItemIndex = (
     type: "SET_SELECTED_DESCRIPTION_ITEM_INDEX";
     itemIndex: number;
   },
-): MapOf<OrgState> =>
+): MapOf<OrgFile> =>
   state.set("selectedDescriptionItemIndex", action.itemIndex);
 
 const setSelectedTableCellId = (
@@ -1109,13 +1116,13 @@ const setSelectedTableCellId = (
     type: "SET_SELECTED_TABLE_CELL_ID";
     cellId: number;
   },
-): MapOf<OrgState> => state.set("selectedTableCellId", action.cellId);
+): MapOf<OrgFile> => state.set("selectedTableCellId", action.cellId);
 
 const updateDescriptionOfHeaderContainingTableCell = (
-  state: MapOf<OrgState>,
+  state: MapOf<OrgFile>,
   cellId: number,
-  header: MapOf<OrgHeadline> = null,
-) => {
+  header: MapOf<OrgHeadline> | null = null,
+): MapOf<OrgFile> => {
   const headers = state.get("headers");
   if (!header) {
     header = headerThatContainsTableCellId(headers, cellId);
@@ -1124,7 +1131,7 @@ const updateDescriptionOfHeaderContainingTableCell = (
 
   return state.updateIn(
     ["headers", headerIndex],
-    (header: MapOf<OrgHeadline>) =>
+    (header: MapOf<OrgHeadline>): MapOf<OrgHeadline> =>
       header.set(
         "rawDescription",
         attributedStringToRawText(header.get("description")),
@@ -1132,7 +1139,7 @@ const updateDescriptionOfHeaderContainingTableCell = (
   );
 };
 
-const addNewTableRow = (state: MapOf<OrgFile>) => {
+const addNewTableRow = (state: MapOf<OrgFile>): MapOf<OrgFile> => {
   const selectedTableCellId = state.get("selectedTableCellId");
   if (!selectedTableCellId) {
     return state;
@@ -1153,7 +1160,7 @@ const addNewTableRow = (state: MapOf<OrgFile>) => {
   );
 };
 
-const removeTableRow = (state: MapOf<OrgFile>) => {
+const removeTableRow = (state: MapOf<OrgFile>): MapOf<OrgFile> => {
   const selectedTableCellId = state.get("selectedTableCellId");
   if (!selectedTableCellId) {
     return state;
@@ -1182,7 +1189,7 @@ const removeTableRow = (state: MapOf<OrgFile>) => {
   );
 };
 
-const addNewTableColumn = (state: MapOf<OrgFile>) => {
+const addNewTableColumn = (state: MapOf<OrgFile>): MapOf<OrgFile> => {
   const selectedTableCellId = state.get("selectedTableCellId");
   if (!selectedTableCellId) {
     return state;
@@ -1195,7 +1202,7 @@ const addNewTableColumn = (state: MapOf<OrgFile>) => {
       (_rowIndex: number, colIndex: number) =>
         (rows: List<MapOf<OrgTableRow>>) =>
           rows.map((row: MapOf<OrgTableRow>) =>
-            row.update("contents", (contents: List<OrgTableCell>) =>
+            row.update("contents", (contents: List<MapOf<OrgTableCell>>) =>
               contents.insert(colIndex + 1, newEmptyTableCell()),
             ),
           ),
@@ -1208,7 +1215,7 @@ const addNewTableColumn = (state: MapOf<OrgFile>) => {
   );
 };
 
-const removeTableColumn = (state: MapOf<OrgFile>): MapOf<OrgState> => {
+const removeTableColumn = (state: MapOf<OrgFile>): MapOf<OrgFile> => {
   const selectedTableCellId = state.get("selectedTableCellId");
   if (!selectedTableCellId) {
     return state;
@@ -1226,7 +1233,7 @@ const removeTableColumn = (state: MapOf<OrgFile>): MapOf<OrgState> => {
       (_rowIndex: number, colIndex: number) =>
         (rows: List<MapOf<OrgTableRow>>) =>
           rows.map((row: MapOf<OrgTableRow>) =>
-            row.update("contents", (contents: List<OrgTableCell>) =>
+            row.update("contents", (contents: List<MapOf<OrgTableCell>>) =>
               contents.delete(colIndex),
             ),
           ),
@@ -1242,7 +1249,7 @@ const removeTableColumn = (state: MapOf<OrgFile>): MapOf<OrgState> => {
   );
 };
 
-const moveTableRowDown = (state: MapOf<OrgFile>): MapOf<OrgState> => {
+const moveTableRowDown = (state: MapOf<OrgFile>): MapOf<OrgFile> => {
   const selectedTableCellId = state.get("selectedTableCellId");
   if (!selectedTableCellId) {
     return state;
@@ -1265,7 +1272,7 @@ const moveTableRowDown = (state: MapOf<OrgFile>): MapOf<OrgState> => {
   );
 };
 
-const moveTableRowUp = (state: MapOf<OrgFile>): MapOf<OrgState> => {
+const moveTableRowUp = (state: MapOf<OrgFile>): MapOf<OrgFile> => {
   const selectedTableCellId = state.get("selectedTableCellId");
   if (!selectedTableCellId) {
     return state;
@@ -1288,7 +1295,7 @@ const moveTableRowUp = (state: MapOf<OrgFile>): MapOf<OrgState> => {
   );
 };
 
-const moveTableColumnLeft = (state: MapOf<OrgFile>) => {
+const moveTableColumnLeft = (state: MapOf<OrgFile>): MapOf<OrgFile> => {
   const selectedTableCellId = state.get("selectedTableCellId");
   if (!selectedTableCellId) {
     return state;
@@ -1303,7 +1310,7 @@ const moveTableColumnLeft = (state: MapOf<OrgFile>) => {
           columnIndex === 0
             ? rows
             : rows.map((row: MapOf<OrgTableRow>) =>
-                row.update("contents", (contents: List<OrgTableCell>) =>
+                row.update("contents", (contents: List<MapOf<OrgTableCell>>) =>
                   contents.size === 0
                     ? contents
                     : contents
@@ -1320,7 +1327,7 @@ const moveTableColumnLeft = (state: MapOf<OrgFile>) => {
   );
 };
 
-const moveTableColumnRight = (state: MapOf<OrgFile>) => {
+const moveTableColumnRight = (state: MapOf<OrgFile>): MapOf<OrgFile> => {
   const selectedTableCellId = state.get("selectedTableCellId");
   if (!selectedTableCellId) {
     return state;
@@ -1335,7 +1342,7 @@ const moveTableColumnRight = (state: MapOf<OrgFile>) => {
           columnIndex + 1 >= rows.getIn([0, "contents"]).size
             ? rows
             : rows.map((row: MapOf<OrgTableRow>) =>
-                row.update("contents", (contents: List<OrgTableCell>) =>
+                row.update("contents", (contents: List<MapOf<OrgTableCell>>) =>
                   contents.size === 0
                     ? contents
                     : contents
@@ -1360,7 +1367,7 @@ const updateTableCellValue = (
     newValue: string;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   state = state.update("headers", (headers: List<MapOf<OrgHeadline>>) =>
     updateTableContainingCellId(
       headers,
@@ -1538,7 +1545,7 @@ const advanceCheckboxState = (
     listItemId: number;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const pathAndPart = pathAndPartOfListItemWithIdInHeaders(
     state.get("headers"),
     action.listItemId,
@@ -1590,7 +1597,7 @@ const setSelectedListItemId = (
     type: "SET_SELECTED_LIST_ITEM_ID";
     listItemId: number;
   },
-): MapOf<OrgState> => state.set("selectedListItemId", action.listItemId);
+): MapOf<OrgFile> => state.set("selectedListItemId", action.listItemId);
 
 const updateDescriptionOfHeaderContainingListItem = (
   state: MapOf<OrgState>,
@@ -1631,7 +1638,7 @@ const updateListTitleValue = (
     newValue: string;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const selectedListItemId = action.listItemId;
   if (!selectedListItemId) {
     return state;
@@ -1659,7 +1666,7 @@ const updateListContentsValue = (
     newValue: string;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const selectedListItemId = action.listItemId;
   if (!selectedListItemId) {
     return state;
@@ -1679,7 +1686,7 @@ const updateListContentsValue = (
   return updateDescriptionOfHeaderContainingListItem(state, selectedListItemId);
 };
 
-const addNewListItem = (state: MapOf<OrgFile>) => {
+const addNewListItem = (state: MapOf<OrgFile>): MapOf<OrgFile> => {
   const selectedListItemId = state.get("selectedListItemId");
   if (!selectedListItemId) {
     return state;
@@ -1705,7 +1712,7 @@ const addNewListItem = (state: MapOf<OrgFile>) => {
   return updateDescriptionOfHeaderContainingListItem(state, selectedListItemId);
 };
 
-const selectNextSiblingListItem = (state: MapOf<OrgFile>) => {
+const selectNextSiblingListItem = (state: MapOf<OrgFile>): MapOf<OrgFile> => {
   const selectedListItemId = state.get("selectedListItemId");
   if (!selectedListItemId) {
     return state;
@@ -1726,7 +1733,7 @@ const selectNextSiblingListItem = (state: MapOf<OrgFile>) => {
   return state;
 };
 
-const removeListItem = (state: MapOf<OrgFile>) => {
+const removeListItem = (state: MapOf<OrgFile>): MapOf<OrgFile> => {
   const selectedListItemId = state.get("selectedListItemId");
   if (!selectedListItemId) {
     return state;
@@ -1754,7 +1761,7 @@ const removeListItem = (state: MapOf<OrgFile>) => {
   );
 };
 
-const moveListItemUp = (state: MapOf<OrgFile>) => {
+const moveListItemUp = (state: MapOf<OrgFile>): MapOf<OrgFile> => {
   const selectedListItemId = state.get("selectedListItemId");
   if (!selectedListItemId) {
     return state;
@@ -1775,7 +1782,7 @@ const moveListItemUp = (state: MapOf<OrgFile>) => {
   return updateDescriptionOfHeaderContainingListItem(state, selectedListItemId);
 };
 
-const moveListItemDown = (state: MapOf<OrgFile>) => {
+const moveListItemDown = (state: MapOf<OrgFile>): MapOf<OrgFile> => {
   const selectedListItemId = state.get("selectedListItemId");
   if (!selectedListItemId) {
     return state;
@@ -1797,7 +1804,7 @@ const moveListItemDown = (state: MapOf<OrgFile>) => {
   return updateDescriptionOfHeaderContainingListItem(state, selectedListItemId);
 };
 
-const moveListItemLeft = (state: MapOf<OrgFile>) => {
+const moveListItemLeft = (state: MapOf<OrgFile>): MapOf<OrgFile> => {
   const selectedListItemId = state.get("selectedListItemId");
   if (!selectedListItemId) {
     return state;
@@ -1818,7 +1825,7 @@ const moveListItemLeft = (state: MapOf<OrgFile>) => {
   return moveListSubtreeLeft(state);
 };
 
-const moveListItemRight = (state: MapOf<OrgFile>) => {
+const moveListItemRight = (state: MapOf<OrgFile>): MapOf<OrgFile> => {
   const selectedListItemId = state.get("selectedListItemId");
   if (!selectedListItemId) {
     return state;
@@ -1874,7 +1881,7 @@ const moveListItemRight = (state: MapOf<OrgFile>) => {
   return updateDescriptionOfHeaderContainingListItem(state, selectedListItemId);
 };
 
-const moveListSubtreeLeft = (state: MapOf<OrgFile>) => {
+const moveListSubtreeLeft = (state: MapOf<OrgFile>): MapOf<OrgFile> => {
   const selectedListItemId = state.get("selectedListItemId");
   if (!selectedListItemId) {
     return state;
@@ -1936,7 +1943,7 @@ const moveListSubtreeLeft = (state: MapOf<OrgFile>) => {
   return updateDescriptionOfHeaderContainingListItem(state, selectedListItemId);
 };
 
-const moveListSubtreeRight = (state: MapOf<OrgFile>) => {
+const moveListSubtreeRight = (state: MapOf<OrgFile>): MapOf<OrgFile> => {
   const selectedListItemId = state.get("selectedListItemId");
   if (!selectedListItemId) {
     return state;
@@ -1993,7 +2000,7 @@ const setHeaderTags = (
     tags: Array<string>;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const headers = state.get("headers");
   const headerIndex = indexOfHeaderWithId(headers, action.headerId);
   if (headerIndex === -1) {
@@ -2014,7 +2021,7 @@ const reorderTags = (
     toIndex: number;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const selectedHeaderId = state.get("selectedHeaderId");
   if (!selectedHeaderId) {
     return state;
@@ -2042,7 +2049,7 @@ const reorderPropertyList = (
     headerId: number;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const headerId = action.headerId;
   if (!headerId) {
     return state;
@@ -2066,7 +2073,7 @@ const updateTimestampWithId = (
     newTimestamp: OrgTimestampPart;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const pathAndPart = pathAndPartOfTimestampItemWithIdInHeaders(
     state.get("headers"),
     action.timestampId,
@@ -2102,7 +2109,7 @@ const updatePlanningItemTimestamp = (
     newTimestamp: OrgTimestampPart;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const { headerId, planningItemIndex, newTimestamp } = action;
   const headerIndex = indexOfHeaderWithId(state.get("headers"), headerId);
 
@@ -2121,7 +2128,7 @@ const addNewPlanningItem = (
     dirtying: boolean;
     timestamp: MapOf<OrgTimestamp>;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const headerIndex = indexOfHeaderWithId(
     state.get("headers"),
     action.headerId,
@@ -2150,7 +2157,7 @@ const removePlanningItem = (
     planningItemIndex: number;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const headerIndex = indexOfHeaderWithId(
     state.get("headers"),
     action.headerId,
@@ -2173,7 +2180,7 @@ const removeTimestamp = (
     timestampId: number;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const { path } = pathAndPartOfTimestampItemWithIdInHeaders(
     state.get("headers"),
     action.timestampId,
@@ -2214,7 +2221,7 @@ export const updatePropertyListItems = (
     newPropertyListItems: Array<string>;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const headerIndex = indexOfHeaderWithId(
     state.get("headers"),
     action.headerId,
@@ -2235,7 +2242,7 @@ export const setLogEntryStop = (
     time: Date;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const { headerId, entryId, time } = action;
   const headerIdx = indexOfHeaderWithId(state.get("headers"), headerId);
   const entryIndex = state
@@ -2256,7 +2263,7 @@ export const createLogEntryStart = (
     time: Date;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const { headerId, time } = action;
   const headerIdx = indexOfHeaderWithId(state.get("headers"), headerId);
   const newEntry = fromJS({
@@ -2282,7 +2289,7 @@ export const updateLogEntryTime = (
     newTime: Date;
     dirtying: boolean;
   },
-): MapOf<OrgState> => {
+): MapOf<OrgFile> => {
   const { headerId, entryIndex, entryType, newTime } = action;
   const headerIdx = indexOfHeaderWithId(state.get("headers"), headerId);
   return state.setIn(
@@ -2755,8 +2762,12 @@ const restoreFileSettings = (
 const reduceInFile =
   <A, B>(state: MapOf<OrgState>, action: A, path: string) =>
   (
-    func: (state: MapOf<OrgFile>, action: A, ...args: B) => MapOf<OrgFile>,
-    ...args: B
+    func: (
+      state: MapOf<OrgFile>,
+      action: A,
+      ...args: Array<B>
+    ) => MapOf<OrgFile>,
+    ...args: Array<B>
   ): MapOf<OrgState> => {
     return state.updateIn(
       ["files", path],
@@ -2769,14 +2780,14 @@ const reducer = (
   state: MapOf<OrgState>,
   action: OrgAction,
 ): MapOf<OrgState> => {
-  const path = state.get("path");
+  const path: string = state.get("path");
   const inFile = reduceInFile(state, action, path);
 
   switch (action.type) {
     case "PARSE_FILE":
       return parseFile(state, action);
     case "CLEAR_SEARCH":
-      return clearSearch(state, action);
+      return clearSearch(state);
     case "TOGGLE_HEADER_OPENED":
       return inFile(toggleHeaderOpened);
     case "OPEN_HEADER":
@@ -2969,7 +2980,7 @@ export default (
 
   state = reducer(state, action);
 
-  if (action.dirtying && state.get("showClockDisplay")) {
+  if (action?.dirtying && state.get("showClockDisplay")) {
     affectedFiles.forEach((path: string): void => {
       state = state.updateIn(
         ["files", path, "headers"],
@@ -3015,12 +3026,12 @@ function updateHeadlines({
   currentTodoSet: MapOf<OrgTodoKeywordSet>;
   newTodoState: string;
   indexedPlanningItemsWithRepeaters: List<MapOf<OrgPlanningItem>>;
-  state: MapOf<OrgState>;
+  state: MapOf<OrgFile>;
   headerIndex: number;
   currentTodoState: string;
   logIntoDrawer: boolean;
   timestamp: MapOf<OrgTimestamp>;
-}): MapOf<OrgState> {
+}): MapOf<OrgFile> {
   if (
     currentTodoSet.get("completedKeywords").includes(newTodoState) &&
     indexedPlanningItemsWithRepeaters.size > 0
@@ -3043,13 +3054,13 @@ function updateHeadlines({
 }
 
 function addTodoStateChangeLogItem(
-  state: MapOf<OrgState>,
+  state: MapOf<OrgFile>,
   headerIndex: number,
   newTodoState: string,
   currentTodoState: string,
   logIntoDrawer: boolean,
   timestamp: MapOf<OrgTimestamp>,
-): MapOf<OrgState> {
+): MapOf<OrgFile> {
   // This is how the TODO state change will be logged
   const inactiveTimestamp = getTimestampAsText(timestamp, {
     isActive: false,
@@ -3085,14 +3096,14 @@ function updatePlanningItemsWithRepeaters({
   timestamp,
 }: {
   indexedPlanningItemsWithRepeaters: List<MapOf<OrgPlanningItem>>;
-  state: MapOf<OrgState>;
+  state: MapOf<OrgFile>;
   headerIndex: number;
   currentTodoSet: MapOf<OrgTodoKeywordSet>;
   newTodoState: string;
   currentTodoState: string;
   logIntoDrawer: boolean;
   timestamp: MapOf<OrgTimestamp>;
-}): MapOf<OrgState> {
+}): MapOf<OrgFile> {
   const headerId = state.getIn(["headers", headerIndex, "id"]);
   state = selectHeader(state, { headerId });
 
@@ -3285,12 +3296,12 @@ function shiftTreeNestingLevel(
     headerIndex,
     subheaders = [] as Array<MapOf<OrgHeadline>>,
   }: {
-    state: MapOf<OrgState>;
+    state: MapOf<OrgFile>;
     headerIndex: number;
     subheaders: Array<MapOf<OrgHeadline>>;
   },
   direction: string = "-",
-): MapOf<OrgState> {
+): MapOf<OrgFile> {
   state = state.updateIn(
     ["headers", headerIndex, "nestingLevel"],
     calculateNestingLevel(),
@@ -3303,7 +3314,7 @@ function shiftTreeNestingLevel(
   });
   return state;
 
-  function calculateNestingLevel() {
+  function calculateNestingLevel(): MapOf<OrgFile> {
     return (nestingLevel: number): number => {
       if (direction === "-") {
         // Don't move a header further to the left than the first
