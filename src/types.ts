@@ -198,7 +198,15 @@ export type OrgTimestamp = {
   timestamp: MapOf<OrgTimestampPart>;
 };
 
-export type OrgPlanningItem = {};
+export type OrgPlanningItemType =
+ | "SCHEDULED"
+ | "DEADLINE"
+
+export type OrgPlanningItem = {
+  type: OrgPlanningItemType
+  timestamp: OrgTimestamp;
+}
+;
 
 export type OrgPropertyListItem = {
   property: string;
@@ -1036,7 +1044,7 @@ export type BaseAction =
       newLastSeenChangelogHash: string;
     };
 
-export type Action =
+export type ReduxAction =
   | SyncBackendAction
   | BaseAction
   | OrgCaptureAction
@@ -1112,3 +1120,10 @@ export type OrgState = {
   showClockDisplay: boolean;
   fileConfigLines: List<string>;
 };
+
+export type State = {
+  base: BaseState;
+  syncBackend: SyncBackendState;
+  org: OrgState;
+  capture: OrgCaptureState;
+}

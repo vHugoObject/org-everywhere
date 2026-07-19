@@ -682,7 +682,7 @@ const createOrUpdateTimestamp = ({
   timestamp: OrgTimestampPart;
   id?: number;
 }): MapOf<OrgTimestampPart> => {
-  const orgTimestamp: OrgTimestampPart = {
+  const orgTimestamp: OrgTimestamp = {
     type,
     timestamp: Map(timestamp),
     id: id || generateId(),
