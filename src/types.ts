@@ -1132,6 +1132,6 @@ export type OrgState = {
 export type State = {
   base: BaseState;
   syncBackend: SyncBackendState;
-  org: OrgState;
+  org: {past: Array<MapOf<OrgState>>, present: MapOf<OrgState>, future: Array<MapOf<OrgState>>};
   capture: OrgCaptureState;
 }
