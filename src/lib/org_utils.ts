@@ -226,8 +226,8 @@ export const getSelectedHeader = (state) => {
   return file.getIn(["headers", headerIdx]);
 };
 
-export const headerWithPath = (headers, headerPath) => {
-  if (headerPath.size === 0) {
+export const headerWithPath = (headers, headerPaths: List<string>) => {
+  if (headerPaths.size === 0) {
     return null;
   }
 
@@ -235,30 +235,30 @@ export const headerWithPath = (headers, headerPath) => {
     (header) =>
       parentIdOfHeaderWithId(headers, header.get("id")) === null &&
       header.getIn(["titleLine", "rawTitle"]).trim() ===
-        substituteTemplateVariables(headerPath.first())[0].trim(),
+        substituteTemplateVariables(headerPaths.first())[0].trim(),
   );
   if (!firstHeader) {
     return null;
   }
 
-  if (headerPath.size === 1) {
+  if (headerPaths.size === 1) {
     return firstHeader;
   }
 
   const subheaders = subheadersOfHeaderWithId(headers, firstHeader.get("id"));
-  return headerWithPath(subheaders, headerPath.rest());
+  return headerWithPath(subheaders, headerPaths.rest());
 };
 
 export const openHeaderWithPath = (
   headers,
-  headerPath,
+  headerPaths: List<string>,
   maxNestingLevel = 1,
 ) => {
-  if (headerPath.size === 0) {
+  if (headerPaths.size === 0) {
     return headers;
   }
 
-  const firstTitle = headerPath.first();
+  const firstTitle = headerPaths.first();
   const headerIndex = headers.findIndex((header) => {
     const rawTitle = header.getIn(["titleLine", "rawTitle"]);
     const nestingLevel = header.get("nestingLevel");
@@ -276,7 +276,7 @@ export const openHeaderWithPath = (
   );
   subheaders = openHeaderWithPath(
     subheaders,
-    headerPath.rest(),
+    headerPaths.rest(),
     maxNestingLevel + 1,
   );
 
