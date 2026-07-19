@@ -376,7 +376,8 @@ export const splitOnUnderscoresAndParseInts = pipe([
 
 export const convertCharacterAtIndexIntoCharacterCode =
   Function.prototype.call.bind(String.prototype.charCodeAt);
-export const convertCharacterIntoCharacterCode = (char: string): number => convertCharacterAtIndexIntoCharacterCode(char, 0)
+export const convertCharacterIntoCharacterCode = (char: string): number =>
+  convertCharacterAtIndexIntoCharacterCode(char, 0);
 
 export const convertCharacterCodeIntoCharacter = String.fromCharCode;
 
