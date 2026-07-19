@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "format": "exec prettier . --write",
-    "refactor": "vite-node refactor/index.ts"
+    "refactor": "vite-node refactor/index.ts",
+    "type": "vite-node refactor/typing.ts"
   },
   "dependencies": {
     "@bity/oauth2-auth-code-pkce": "^2.13.0",

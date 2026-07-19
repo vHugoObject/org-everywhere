@@ -35,8 +35,6 @@ export type OrgTimestampPart = {
   repeaterDeadlineUnit: string | undefined;
 };
 
-
-
 export type OrgLinkToken = {
   type: "link";
   rawText: string;
@@ -115,7 +113,6 @@ export type OrgRecursiveToken =
 
 export type OrgToken = OrgRecursiveToken | OrgSimpleToken;
 
-
 export type OrgMarkupType =
   | "inline-code"
   | "bold"
@@ -123,7 +120,6 @@ export type OrgMarkupType =
   | "strikethrough"
   | "underline"
   | "verbatim";
-
 
 export type AgendaTimeframe = "Week" | "Day" | "Month";
 export type TimestampUnits = "h" | "d" | "m" | "w" | "y";
@@ -136,7 +132,6 @@ export type PlanningType = "DEADLINE" | "SCHEDULED";
 export type Context = "agenda" | "search" | "task-list" | "refile";
 export type FinderTab = "Search" | "Clock List" | "Task List";
 export type BulletStyle = "Fancy" | "Classic";
-
 
 export type OrgTodoKeywordSet = {
   keywords: List<string>;
@@ -203,12 +198,10 @@ export type OrgTimestamp = {
   timestamp: MapOf<OrgTimestampPart>;
 };
 
-export type OrgPlanningItemType =
- | "SCHEDULED"
- | "DEADLINE"
+export type OrgPlanningItemType = "SCHEDULED" | "DEADLINE";
 
 export type OrgPlanningItem = {
-  type: OrgPlanningItemType
+  type: OrgPlanningItemType;
   timestamp: OrgTimestamp;
 };
 
@@ -258,8 +251,12 @@ export type OrgTable = {
   columnProperties: List<any>;
 };
 
-
-export type OrgTitleElement = OrgText | OrgPlanningItem | OrgTimestamp | OrgInlineMarkup | OrgCookie;
+export type OrgTitleElement =
+  | OrgText
+  | OrgPlanningItem
+  | OrgTimestamp
+  | OrgInlineMarkup
+  | OrgCookie;
 
 export type OrgTitleLine = {
   title: List<MapOf<OrgTitleElement>>;
@@ -1132,6 +1129,10 @@ export type OrgState = {
 export type State = {
   base: BaseState;
   syncBackend: SyncBackendState;
-  org: {past: Array<MapOf<OrgState>>, present: MapOf<OrgState>, future: Array<MapOf<OrgState>>};
+  org: {
+    past: Array<MapOf<OrgState>>;
+    present: MapOf<OrgState>;
+    future: Array<MapOf<OrgState>>;
+  };
   capture: OrgCaptureState;
-}
+};

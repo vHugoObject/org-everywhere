@@ -30,7 +30,6 @@ import {
   flatten,
   curry,
   uniq,
-  concat,
 } from "lodash/fp";
 import {
   Project,
@@ -63,6 +62,10 @@ import {
   TypeAliasDeclaration,
 } from "ts-morph";
 
+const filterMap = curry(pipe([map, compact]));
+const arrayToSet = <T>(x: Array<T>): Set<T> => new Set(x);
+const includesAny = includes("any");
+
 const reduceReplaceAll = (
   valuesToReplace: Array<string>,
   strToEdit: string,
@@ -76,10 +79,7 @@ const reduceReplaceAll = (
   );
 };
 
-const filterMap = curry(pipe([map, compact]));
-const arrayToSet = <T>(x: Array<T>): Set<T> => new Set(x);
-
-const STATETYPENAME: string = "MapOf<OrgState>";
+const STATETYPENAME: string = "State";
 
 const ACTIONTYPESTOCREATE: Array<[string, string]> = [
   ["./src/actions/org.ts", "OrgAction"],
@@ -100,6 +100,39 @@ const REDUCERTYPESTOCREATE: Array<[string, string]> = [
   ["./src/reducers/capture.ts", "OrgCaptureState"],
   ["./src/reducers/base.ts", "BaseState"],
   ["./src/reducers/sync_backend.ts", "SyncBackendState"],
+];
+
+const MAPOFTYPES = [
+  "OrgTimestampPart",
+  "OrgTodoKeywordSet",
+  "OrgLink",
+  "OrgPercentageCookie",
+  "OrgFractionCookie",
+  "OrgCookie",
+  "OrgInlineMarkup",
+  "OrgTimestamp",
+  "OrgClockString",
+  "OrgListItem",
+  "OrgList",
+  "OrgTable",
+  "OrgTableCell",
+  "OrgHeadline",
+  "OrgText",
+  "OrgFile",
+  "OrgState",
+  "BaseState",
+  "SyncBackendState",
+  "OrgCaptureState",
+  "OrgCaptureTemplate",
+  "OrgPropertyListItem",
+  "PendingCapture",
+  "FileSetting",
+  "Bookmark",
+  "Search",
+  "Client",
+  "DirectoryListing",
+  "DirectoryListingEntry",
+  "AdditionalSyncBackendState",
 ];
 
 const ISBOOLEANTYPEARGS = [
@@ -173,7 +206,11 @@ const ISSTRINGTYPEARGS = [
   endsWith("Path"),
 ];
 
-const ISARRAYOFSTRINGSTYPEARGS = [eq("tags"), eq("fileConfigLines")];
+const ISLISTOFSTRINGSTYPEARGS = [
+  eq("tags"),
+  eq("fileConfigLines"),
+  eq("headerPaths"),
+];
 
 const ISRECORDSTRINGSTRINGTYPEARGS = [eq("newSettings"), eq("data")];
 
@@ -264,14 +301,16 @@ const tryToConvertStringIntoType = cond([
   [eq("editMode"), constant("EditModeType")],
   [eq("newBulletStyle"), constant("BulletStyle")],
   [
-    overSome([eq("todoKeywordSets"), eq("currentTodoSet")]),
+    overSome([eq("todoKeywordSet"), eq("currentTodoSet")]),
     constant("MapOf<OrgTodoKeywordSet>"),
   ],
+  [eq("todoKeywordSets"), constant("List<MapOf<FileSetting>>")],
   [eq("setting"), constant("MapOf<FileSetting>")],
   [eq("settings"), constant("List<MapOf<FileSetting>>")],
   [eq("fileSettings"), constant("List<MapOf<FileSetting>>")],
   [eq("row"), constant("MapOf<OrgTableRow>")],
   [eq("rows"), constant("List<MapOf<OrgTableRow>>")],
+  [eq("tablePart"), constant("MapOf<OrgTable>")],
   [overSome([eq("fromList"), eq("toList")]), constant("List<any>")],
   [eq("files"), constant("List<MapOf<OrgFile>>")],
   [eq("file"), constant("MapOf<OrgFile>")],
@@ -289,6 +328,13 @@ const tryToConvertStringIntoType = cond([
   [eq("bookmark"), constant("List<MapOf<Bookmark>>")],
   [eq("isLoading"), constant("Set<string>")],
   [eq("timestamp"), constant("MapOf<OrgTimestamp>")],
+  [eq("timestampPart"), constant("MapOf<OrgTimestampPart>")],
+  [
+    overSome([eq("listItemPart"), eq("listItem")]),
+    constant("MapOf<OrgListItem>"),
+  ],
+  [eq("listItemPart"), constant("MapOf<OrgListItem>")],
+  [eq("property"), constant("MapOf<OrgPropertyListItem>")],
   [
     eq("indexedPlanningItemsWithRepeaters"),
     constant("List<MapOf<OrgPlanningItem>>"),
@@ -310,7 +356,7 @@ const tryToConvertStringIntoType = cond([
   [overSome(ISNUMBERTYPEARGS), constant("number")],
   [overSome(ISDATETYPEARGS), constant("Date")],
   [overSome(ISSTRINGTYPEARGS), constant("string")],
-  [overSome(ISARRAYOFSTRINGSTYPEARGS), constant("List<string>")],
+  [overSome(ISLISTOFSTRINGSTYPEARGS), constant("List<string>")],
   [overSome(ISRECORDSTRINGSTRINGTYPEARGS), constant("Record<string, string>")],
   [overSome(ISTYPETYPEARGS), capitalize],
   [
@@ -455,6 +501,21 @@ const isReduxReducer = (node: FunctionDeclaration | ArrowFunction): boolean => {
   return params.has("state") && params.has("action");
 };
 
+const isOrgFileReducer = (
+  node: FunctionDeclaration | ArrowFunction,
+): boolean => {
+  const params = new Set(
+    node.getParameters().map((node: ParameterDeclaration) => node.getName()),
+  );
+  if (!params.has("state")) return false;
+
+  const stateParamType: string = node
+    .getParameterOrThrow("state")
+    .getTypeNodeOrThrow()
+    .getText();
+  return stateParamType === "MapOf<OrgFile>" ? true : false;
+};
+
 const annotateAllXReturnValues =
   (
     filePathTuples: Array<[string, string]>,
@@ -466,8 +527,9 @@ const annotateAllXReturnValues =
       const sourceFile = project.addSourceFileAtPath(filePath);
       sourceFile.forEachDescendant((descendant: Node): void => {
         if (
-          Node.isFunctionDeclaration(descendant) ||
-          (Node.isArrowFunction(descendant) && predicate(descendant))
+          (Node.isFunctionDeclaration(descendant) ||
+            Node.isArrowFunction(descendant)) &&
+          predicate(descendant)
         ) {
           descendant.setReturnType(typeName);
         }
@@ -518,8 +580,6 @@ const convertTypeIntoTypeNode = baseConvertTypeIntoTypeNode();
 const createTypeForValue = (type: Type): string => {
   const typeAsText: string = type.getText();
   const typeNode: TypeNode = convertTypeIntoTypeNode(type);
-  console.log(typeNode.getText(), Node.isTypeReference(typeNode));
-  if (!Node.isTypeReference(typeNode)) return typeAsText;
 
   const qualifiedNameReplacers: Array<string> = map(
     (qualifiedName: QualifiedName): string => {
@@ -538,10 +598,10 @@ const createTypeForValue = (type: Type): string => {
     compact,
   ])(typeNode.getDescendantsOfKind(SyntaxKind.ImportType) ?? []);
 
-  const replacers: Array<string> = [
+  const replacers: Array<string> = uniq([
     ...qualifiedNameReplacers,
     ...importTypeReplacers,
-  ];
+  ]);
   if (replacers.length === 0) return typeAsText;
   console.log(replacers);
 
@@ -581,22 +641,27 @@ const createTupleBindingPatternType = (node: ArrayBindingPattern): string => {
   ])(node.getElements());
 };
 
-const getTypeForNode = (
+const tryInferenceByVariableName = (
   node: ParameterDeclaration | VariableDeclaration | BindingElement,
   stateTypeName: string = STATETYPENAME,
-): string | WriterFunction | null => {
+): string | null => {
   const paramName: string = node.getName();
   const myInference: string =
-    paramName == "state"
+    stateTypeName && paramName == "state"
       ? stateTypeName
       : tryToConvertStringIntoType(paramName);
   if (myInference) {
     return myInference;
   }
+  return null;
+};
 
+const getTypeForNode = (
+  node: ParameterDeclaration | VariableDeclaration | BindingElement,
+): string | WriterFunction | null => {
   const typescriptInference = node.getType();
   if (typescriptInference.isAny()) {
-    return null;
+    return tryInferenceByVariableName(node);
   }
 
   const objPattern = node.getFirstChildByKind(SyntaxKind.ObjectBindingPattern);
@@ -611,29 +676,45 @@ const getTypeForNode = (
   return createTypeForValue(typescriptInference);
 };
 
-const annotateAllFunctionArguments = async (
+const annotateAllDeclarations = async (
   filePaths: Array<string>,
 ): Promise<void> => {
   const project = new Project({});
   forEach((filePath: string): void => {
     const sourceFile = project.addSourceFileAtPath(filePath);
     sourceFile.forEachDescendant((descendant: Node): void => {
-      if (
-        Node.isParameterDeclaration(descendant) &&
-        !descendant.getTypeNode()
-      ) {
-        const type = getTypeForNode(descendant);
-        type && descendant.setType(type);
-      }
-    });
+      const isDeclaration =
+        Node.isParameterDeclaration(descendant) ||
+        Node.isVariableDeclaration(descendant);
+      if (!isDeclaration) return;
 
+      // skip arrow functions
+      if (descendant.getFirstChildByKind(SyntaxKind.ArrowFunction)) return;
+      // skip curried functions
+      if (
+        descendant
+          .getFirstChildByKind(SyntaxKind.CallExpression)
+          ?.getReturnType()
+          .getText()
+          .includes("CurriedFunction")
+      )
+        return;
+
+      const typeNode = descendant.getTypeNode();
+      if (typeNode && !includesAny(typeNode.getText())) return;
+      const type = getTypeForNode(descendant);
+      type && descendant.setType(type);
+      return;
+    });
+    sourceFile.fixMissingImports();
     sourceFile.organizeImports();
   })(filePaths);
   await project.save();
 };
 
 //await annotateAllActionDispatcherReturnValues([["./src/actions/sync_backend.ts", "SyncBackendAction"]])
-//await annotateAllFunctionArguments(["./src/actions/org.ts"])
+//await annotateAllDeclarations(["./src/actions/org.ts"])
+await annotateAllDeclarations(["./src/lib/org_utils.ts"]);
 
 const annotateAllActionCreatorReturnValues = annotateAllXReturnValues(
   ACTIONTYPESTOCREATE,
@@ -644,6 +725,13 @@ const annotateAllReduxReducerReturnValues = annotateAllXReturnValues(
   [["./src/reducers/org.ts", "MapOf<OrgState>"]],
   isReduxReducer,
 );
+
+const annotateAllOrgFileReducerReturnValues = annotateAllXReturnValues(
+  [["./src/reducers/org.ts", "MapOf<OrgFile>"]],
+  isOrgFileReducer,
+);
+
+//await annotateAllOrgFileReducerReturnValues();
 
 const convertValueIntoPropertySignature = (
   name: string,
@@ -912,7 +1000,6 @@ const reducersForOrgFiles = async (): Promise<void> => {
       SyntaxKind.VariableDeclaration,
     );
     if (funcName && inFileFunctions.has(funcName.getName())) {
-      console.log(funcName?.getName());
       descendant.setType("MapOf<OrgFile>");
     }
   });
@@ -1010,11 +1097,61 @@ const shiftPropertiesFromTypeXToTypeY = async (
   await project.save();
 };
 
-await shiftPropertiesFromTypeXToTypeY(
-  "OrgState",
-  "OrgFile",
-  "./src/reducers/org.ts",
-);
+const fixMapOfTypes = async (path: string): Promise<void> => {
+  const MAPOFTYPESSET = new Set(MAPOFTYPES);
+  const project = new Project({});
+
+  const sourceFiles: Array<SourceFile> = project.addSourceFilesAtPaths(path);
+
+  forEach((sourceFile: SourceFile): void => {
+    const params: Array<ParameterDeclaration> = sourceFile.getDescendantsOfKind(
+      SyntaxKind.Parameter,
+    );
+    forEach((param: ParameterDeclaration) => {
+      const typeNode = param.getTypeNode()?.getText();
+      if (!typeNode) return;
+      if (!MAPOFTYPESSET.has(typeNode)) return;
+      console.log(typeNode);
+      param.setType(`MapOf<${typeNode}>`);
+    })(params);
+  })(sourceFiles);
+
+  await project.save();
+};
+
+const annotateAllReturnTypesInFiles = async (
+  filePaths: Array<string>,
+): Promise<void> => {
+  const project = new Project({});
+  forEach((filePath: string): void => {
+    const sourceFile = project.addSourceFileAtPath(filePath);
+    sourceFile.forEachDescendant((descendant: Node): void => {
+      const isFunc =
+        Node.isFunctionDeclaration(descendant) ||
+        Node.isArrowFunction(descendant);
+      if (!isFunc) return;
+      const typeNode = descendant.getReturnTypeNode();
+      if (typeNode && typeNode.getText() !== "any") return;
+      const inferredType: Type = descendant.getReturnType();
+      if (inferredType.getText() !== "any") {
+        descendant.setReturnType(createTypeForValue(inferredType));
+        return;
+      }
+      return;
+    });
+  })(filePaths);
+  await project.save();
+};
+
+await annotateAllReturnTypesInFiles(["./src/lib/org_utils.ts"]);
+
+//await fixMapOfTypes("./src/reducers/*")
+
+// await shiftPropertiesFromTypeXToTypeY(
+//   "OrgState",
+//   "OrgFile",
+//   "./src/reducers/org.ts",
+// );
 
 // await annotateReduxReducerFiles([
 //   ["./src/reducers/org.ts", "OrgAction", "MapOf<OrgState>"],
