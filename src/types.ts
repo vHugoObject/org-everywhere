@@ -15,30 +15,6 @@ export interface RGBA {
   alpha: number;
 }
 
-export type AgendaTimeframe = "Week" | "Day" | "Month";
-export type TimestampUnits = "h" | "d" | "m" | "w" | "y";
-export type DelayUnit = TimestampUnits;
-export type RepeaterUnit = TimestampUnits;
-
-export type LogEntryType = "start" | "end";
-export type PlanningType = "DEADLINE" | "SCHEDULED";
-
-export type Context = "agenda" | "search" | "task-list" | "refile";
-export type FinderTab = "Search" | "Clock List" | "Task List";
-export type BulletStyle = "Fancy" | "Classic";
-
-export type OrgTodoKeywordSet = {
-  keywords: List<string>;
-  completedKeywords: List<string>;
-  configLine?: string;
-  default: boolean;
-};
-
-export type OrgFileConfig = {
-  todoKeywordSets: List<MapOf<OrgTodoKeywordSet>>;
-  fileConfigLines: List<string>;
-};
-
 export type OrgTimestampPart = {
   isActive: boolean;
   year: string;
@@ -59,13 +35,7 @@ export type OrgTimestampPart = {
   repeaterDeadlineUnit: string | undefined;
 };
 
-export type OrgMarkupType =
-  | "inline-code"
-  | "bold"
-  | "italic"
-  | "strikethrough"
-  | "underline"
-  | "verbatim";
+
 
 export type OrgLinkToken = {
   type: "link";
@@ -145,6 +115,41 @@ export type OrgRecursiveToken =
 
 export type OrgToken = OrgRecursiveToken | OrgSimpleToken;
 
+
+export type OrgMarkupType =
+  | "inline-code"
+  | "bold"
+  | "italic"
+  | "strikethrough"
+  | "underline"
+  | "verbatim";
+
+
+export type AgendaTimeframe = "Week" | "Day" | "Month";
+export type TimestampUnits = "h" | "d" | "m" | "w" | "y";
+export type DelayUnit = TimestampUnits;
+export type RepeaterUnit = TimestampUnits;
+
+export type LogEntryType = "start" | "end";
+export type PlanningType = "DEADLINE" | "SCHEDULED";
+
+export type Context = "agenda" | "search" | "task-list" | "refile";
+export type FinderTab = "Search" | "Clock List" | "Task List";
+export type BulletStyle = "Fancy" | "Classic";
+
+
+export type OrgTodoKeywordSet = {
+  keywords: List<string>;
+  completedKeywords: List<string>;
+  configLine?: string;
+  default: boolean;
+};
+
+export type OrgFileConfig = {
+  todoKeywordSets: List<MapOf<OrgTodoKeywordSet>>;
+  fileConfigLines: List<string>;
+};
+
 export type OrgText = {
   type: "text";
   contents: string;
@@ -205,12 +210,11 @@ export type OrgPlanningItemType =
 export type OrgPlanningItem = {
   type: OrgPlanningItemType
   timestamp: OrgTimestamp;
-}
-;
+};
 
 export type OrgPropertyListItem = {
   property: string;
-  value: OrgText | OrgTimestamp | List<MapOf<OrgElement>> | null;
+  value: List<MapOf<OrgText> | MapOf<OrgTimestamp> | null>;
   id: number;
 };
 
@@ -218,7 +222,7 @@ export type OrgCheckboxState = "unchecked" | "checked" | "partial";
 
 export type OrgListItem = {
   id: number;
-  titleLine: List<MapOf<OrgElement>>;
+  titleLine: List<MapOf<OrgTitleElement>>;
   contents: any;
   forceNumber: string | null;
   isCheckbox: boolean;
@@ -254,12 +258,11 @@ export type OrgTable = {
   columnProperties: List<any>;
 };
 
-export type OrgTitle = {
-  id: number;
-};
+
+export type OrgTitleElement = OrgText | OrgPlanningItem | OrgTimestamp | OrgInlineMarkup | OrgCookie;
 
 export type OrgTitleLine = {
-  title: MapOf<OrgTitle>;
+  title: List<MapOf<OrgTitleElement>>;
   rawTitle: string;
   todoKeyword: string;
   tags: List<string>;
@@ -282,13 +285,18 @@ export type OrgElement =
   | OrgLink
   | OrgPercentageCookie
   | OrgFractionCookie
+  | OrgCookie
   | OrgInlineMarkup
   | OrgTimestamp
+  | OrgPlanningItem
   | OrgClockString
+  | OrgPropertyListItem
   | OrgListItem
   | OrgList
-  | OrgTable
   | OrgTableCell
+  | OrgTableRow
+  | OrgTable
+  | OrgTitleLine
   | OrgHeadline
   | OrgText
   | {
