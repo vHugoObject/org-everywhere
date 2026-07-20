@@ -1,5 +1,6 @@
 /* eslint jest/expect-expect: ["error", { "assertFunctionNames": ["expect", "expectStrippedDescription", "expectType"] }] */
-
+import { describe, expect } from "vitest";
+import { test } from "@fast-check/vitest";
 import {
   parseOrg,
   parseDescriptionPrefixElements,
@@ -18,7 +19,7 @@ import { fromJS } from "immutable";
  * @param {String} testOrgFile - contents of an org file
  * @param {Boolean} dontIndent - by default false, so indent drawers
  */
-function parseAndExportOrgFile(testOrgFile, dontIndent = false) {
+const parseAndExportOrgFile = (testOrgFile: string, dontIndent = false) => {
   const parsedFile = parseOrg(testOrgFile);
   const exportedFile = exportOrg({
     headers: parsedFile.get("headers"),
