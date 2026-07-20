@@ -1,13 +1,12 @@
 import React from "react";
 import thunk from "redux-thunk";
-import "@testing-library/jest-dom/extend-expect";
-import readFixture from "../../../../../../test_helpers/index";
+import { describe, expect, beforeEach } from "vitest";
+import { test } from "@fast-check/vitest";
 import { MemoryRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 import { createStore, applyMiddleware } from "redux";
-
+import readFixture from "../../../../../../test_helpers/index";
 import rootReducer from "../../../../../reducers/";
-
 import {
   setPath,
   parseFile,

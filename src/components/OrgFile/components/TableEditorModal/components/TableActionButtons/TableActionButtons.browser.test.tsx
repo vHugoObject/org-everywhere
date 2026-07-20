@@ -1,13 +1,17 @@
 import React from "react";
 import thunk from "redux-thunk";
-import readFixture from "../../../../../../../test_helpers/index";
+import { describe, expect, beforeEach } from "vitest";
+import { test } from "@fast-check/vitest";
+import { Map, Set, fromJS, List } from "immutable";
+import { shuffle, first, pipe, range, curry, add } from "lodash/fp";
+import { render, fireEvent, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 import { createStore, applyMiddleware } from "redux";
 
+import readFixture from "../../../../../../../test_helpers/index";
 import HeaderBar from "../../../../../HeaderBar";
 import rootReducer from "../../../../../../reducers/";
-
 import {
   setPath,
   parseFile,
@@ -21,13 +25,9 @@ import {
   STATIC_FILE_PREFIX,
   getSelectedTable,
 } from "../../../../../../lib/org_utils";
-
-import { Map, Set, fromJS, List } from "immutable";
-import { shuffle, first, pipe, range, curry, add } from "lodash/fp";
-import { render, fireEvent, cleanup } from "@testing-library/react";
 import TableActionButtons from "./index";
 
-import "@testing-library/jest-dom/extend-expect";
+
 
 const capture = Map({ captureTemplates: [] });
 const testBaseState = {

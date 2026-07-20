@@ -1,12 +1,15 @@
 import React from "react";
 import thunk from "redux-thunk";
-import readFixture from "../../../../../test_helpers/index";
 import { MemoryRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 import { createStore, applyMiddleware } from "redux";
-
+import { describe, expect, beforeEach } from "vitest";
+import { test } from "@fast-check/vitest";
+import { Map, Set, fromJS, List } from "immutable";
+import { shuffle, first, trim, pipe, range, take, curry } from "lodash/fp";
+import { render, fireEvent, cleanup } from "@testing-library/react";
+import readFixture from "../../../../../test_helpers/index";
 import rootReducer from "../../../../reducers/";
-
 import {
   setPath,
   parseFile,
@@ -21,13 +24,9 @@ import {
   STATIC_FILE_PREFIX,
   getSelectedTable,
 } from "../../../../lib/org_utils";
-
-import { Map, Set, fromJS, List } from "immutable";
-import { shuffle, first, trim, pipe, range, take, curry } from "lodash/fp";
-import { render, fireEvent, cleanup } from "@testing-library/react";
 import Table from "./index";
 
-import "@testing-library/jest-dom/extend-expect";
+
 
 const capture = Map({ captureTemplates: [] });
 const testBaseState = {
@@ -221,6 +220,7 @@ describe("Table tests", () => {
 
     // timestamp will be placed in a seperate AttributedString Element
     expect(getByText(expectedTimestamp)).toBeTruthy();
+    console.log(testTextOfSecondCell)
     expect(getByText(testTextOfSecondCell)).toBeTruthy();
 
     expect(getByText(testTextOfFirstCell)).toBeTruthy();

@@ -29,7 +29,7 @@ import { pipe, shuffle, range, first, curry, trim } from "lodash/fp";
 import { render, fireEvent, cleanup } from "@testing-library/react";
 import TableCellEditContainer from "./index";
 
-import "@testing-library/jest-dom/extend-expect";
+
 
 const capture = Map({ captureTemplates: [] });
 const testBaseState = {
@@ -54,7 +54,7 @@ const testBaseState = {
     isAuthenticated: true,
   }),
   capture,
-  base: new fromJS({
+  base: fromJS({
     customKeybindings: {},
     shouldTapTodoToAdvance: true,
     isLoading: Set(),
