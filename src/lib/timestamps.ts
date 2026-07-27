@@ -1,6 +1,10 @@
+import { match } from "ts-pattern";
 import {
-  format,
   parse,
+  isBefore,
+  isEqual as datesEqual,
+  differenceInMinutes,
+  differenceInHours,
   addHours,
   addDays,
   addWeeks,
@@ -11,17 +15,103 @@ import {
   subWeeks,
   subMonths,
   subYears,
-  isBefore,
-  differenceInMinutes,
+  format,
   getHours,
   setHours,
   getMinutes,
   setMinutes,
-} from "date-fns";
+} from "date-fns/fp";
+import {
+  sortBy,
+  identity,
+  padCharsStart,
+  property,
+  map,
+  over,
+  merge,
+  reduce,
+  pipe,
+  partialRight,
+  isString,
+  zip,
+  startsWith
+} from "lodash/fp";
+import { type MapOf, Map, get, setIn } from "immutable";
+import type {
+  TimestampUnit,
+  OrgTimestampPart,
+  RepeaterType,
+  RepeaterUnit,
+} from "../types";
+import {
+  REPEATERTYPESSET,
+  TIMESTAMPUNITSSET,
+  ORGTIMESTAMPDATEKEYNAMES,
+  DELAYTYPESSET,
+  DAYABBREVS
+} from "./constants";
 
-export const renderAsText = (timestamp) => {
+
+export const padTimePart = padCharsStart("0", 2);
+export const convertDayNumberIntoDayName = (
+  number: number,
+  abbrevs = DAYABBREVS,
+): string => property(number, abbrevs);
+
+export const getYearFromDate = (date: Date): string =>
+  date.getFullYear().toString();
+export const getMonthFromDate = (date: Date): string =>
+  padTimePart((date.getMonth() + 1).toString());
+export const getDayFromDate = (date: Date): string =>
+  padTimePart(date.getDate().toString());
+export const getDayNameFromDate = (date: Date): string =>
+  convertDayNumberIntoDayName(date.getDay());
+export const getStartHourFromDate = (date: Date): string =>
+  padTimePart(date.getHours().toString());
+export const getStartMinuteFromDate = (date: Date): string =>
+  padTimePart(date.getMinutes().toString());
+export const getTimestampPartsFromDate = over([
+  getYearFromDate,
+  getMonthFromDate,
+  getDayFromDate,
+  getDayNameFromDate,
+  getStartHourFromDate,
+  getStartMinuteFromDate,
+]);
+export const getTimestampPartsFromDateWithKeyNames = pipe([
+  getTimestampPartsFromDate,
+  zip(ORGTIMESTAMPDATEKEYNAMES),
+]);
+
+export const isValidRepeaterUnit = (
+  value: unknown,
+  repeaterUnitsSet = TIMESTAMPUNITSSET,
+): value is RepeaterUnit => isString(value) && repeaterUnitsSet.has(value);
+export const isValidRepeaterType = (
+  value: unknown,
+  repeaterTypesSet = REPEATERTYPESSET,
+): value is RepeaterType => isString(value) && repeaterTypesSet.has(value);
+
+export const isValidDelayType = (
+  value: unknown,
+  delayTypesSet = DELAYTYPESSET,
+): value is RepeaterType => isString(value) && delayTypesSet.has(value);
+
+
+const renderAsTextReducer = (
+  currStr: string,
+  [bool, stringToAppend]: [boolean, string],
+): string => {
+  if (bool) {
+    return currStr + stringToAppend;
+  }
+  return currStr;
+};
+
+export const renderAsText = (timestamp: MapOf<OrgTimestampPart>): string => {
   const {
     isActive,
+    withStartTime,
     year,
     month,
     day,
@@ -40,214 +130,275 @@ export const renderAsText = (timestamp) => {
     delayUnit,
   } = timestamp.toJS();
 
-  let timestampText = "";
-  timestampText += isActive ? "<" : "[";
-  timestampText += `${year}-${month}-${day}`;
-  timestampText += !!dayName ? ` ${dayName}` : "";
-  timestampText += !!startHour ? ` ${startHour}:${startMinute}` : "";
-  timestampText += !!endHour ? `-${endHour}:${endMinute}` : "";
-  timestampText += !!repeaterType
-    ? ` ${repeaterType}${repeaterValue}${repeaterUnit}`
-    : "";
-  timestampText +=
-    !!repeaterType && !!repeaterDeadlineValue
-      ? `/${repeaterDeadlineValue}${repeaterDeadlineUnit}`
-      : "";
-  timestampText += !!delayType ? ` ${delayType}${delayValue}${delayUnit}` : "";
-  timestampText += isActive ? ">" : "]";
+  const [startBracket, endBracket]: string = isActive ? "<>" : "[]";
+  const boolFuncTuples: Array<[boolean, string]> = [
+    [true, startBracket],
+    [true, `${year}-${month}-${day} ${dayName}`],
+    [withStartTime, ` ${startHour}:${startMinute}`],
+    [withStartTime && !!endHour, `-${endHour}:${endMinute}`],
+    [!!repeaterType, ` ${repeaterType}${repeaterValue}${repeaterUnit}`],
+    [
+      !!repeaterType && !!repeaterDeadlineValue,
+      `/${repeaterDeadlineValue}${repeaterDeadlineUnit}`,
+    ],
+    [!!delayType, ` ${delayType}${delayValue}${delayUnit}`],
+    [true, endBracket],
+  ];
 
-  return timestampText;
+  return reduce(renderAsTextReducer, "", boolFuncTuples);
 };
 
 export const getCurrentTimestamp = ({
   isActive = true,
   withStartTime = false,
-} = {}) => timestampForDate(new Date(), { isActive, withStartTime });
+} = {}): OrgTimestampPart =>
+  timestampPartObjectForDate(new Date(), { isActive, withStartTime });
 
-export const timestampForDate = (
-  time,
+export const timestampPartObjectForDate = (
+  time: Date,
   { isActive = true, withStartTime = false } = {},
-) => {
-  const timestamp = {
+): OrgTimestampPart => {
+  return {
     isActive,
-    year: format(time, "yyyy"),
-    month: format(time, "MM"),
-    day: format(time, "dd"),
-    dayName: format(time, "eee"),
-    startHour: null,
-    startMinute: null,
-    endHour: null,
-    endMinute: null,
-    repeaterType: null,
-    repeaterValue: null,
-    repeaterUnit: null,
-    repeaterDeadlineValue: null,
-    repeaterDeadlineUnit: null,
-    delayType: null,
-    delayValue: null,
-    delayUnit: null,
+    withStartTime,
+    year: time.getFullYear().toString(),
+    month: format("MM", time),
+    day: format("dd", time),
+    dayName: format("eee", time),
+    startHour: format("HH", time),
+    startMinute: format("mm", time),
+    endHour: undefined,
+    endMinute: undefined,
+    repeaterType: undefined,
+    repeaterValue: undefined,
+    repeaterUnit: undefined,
+    repeaterDeadlineValue: undefined,
+    repeaterDeadlineUnit: undefined,
+    delayType: undefined,
+    delayValue: undefined,
+    delayUnit: undefined,
   };
-
-  if (withStartTime) {
-    timestamp.startHour = format(time, "HH");
-    timestamp.startMinute = format(time, "mm");
-  }
-
-  return timestamp;
 };
 
-// To get around the heavy-weight renderAsText(fromJS(getCurrentTimestampAsText()))
-export const getCurrentTimestampAsText = ({
+export const timestampPartRecordForDate = (
+  { isActive = true, withStartTime = false } = {},
+  time: Date,
+): MapOf<OrgTimestampPart> => {
+  return Map(timestampPartObjectForDate(time, { isActive, withStartTime }));
+};
+
+export const getJSDateAsOrgTimestampString = (
+  time: Date,
+  { isActive = true, withStartTime = false } = {},
+): string => {
+  const bracketPair: string = isActive ? "<>" : "[]";
+  let formatString: string = "yyyy-MM-dd eee";
+  if (withStartTime) formatString += " HH:mm";
+  return `${bracketPair[0]}${format(formatString, time)}${bracketPair[1]}`;
+};
+
+// To get around the heavy-weight renderAsText(fromJS(getCurrentJSDateAsOrgTimestampString()))
+export const getCurrentJSDateAsOrgTimestampString = ({
   isActive = true,
   withStartTime = true,
-} = {}) => getTimestampAsText(new Date(), { isActive, withStartTime });
-export const getTimestampAsText = (
-  time,
-  { isActive = true, withStartTime = false } = {},
-) => {
-  const bracketPair = isActive ? "<>" : "[]";
-  let formatString = "yyyy-MM-dd eee";
-  if (withStartTime) formatString += " HH:mm";
-  return `${bracketPair[0]}${format(time, formatString)}${bracketPair[1]}`;
-};
+} = {}): string =>
+  getJSDateAsOrgTimestampString(new Date(), { isActive, withStartTime });
 
-export const dateForTimestamp = (timestamp) => {
+export const dateForTimestamp = (timestamp: MapOf<OrgTimestampPart>): Date => {
+  // should not use toJS() here
   const { year, month, day, startHour, startMinute } = timestamp.toJS();
-
-  let timestampString = `${year}-${month}-${day}`;
-  if (startHour && startMinute) {
-    timestampString += ` ${startHour.padStart(2, "0")}:${startMinute}`;
-  } else {
-    timestampString += " 12:00";
-  }
-  return parse(timestampString, "yyyy-MM-dd HH:mm", new Date());
+  let timestampString: string = `${year}-${month}-${day} ${startHour}:${startMinute}`;
+  return parse(new Date(), "yyyy-MM-dd HH:mm", timestampString);
 };
 
-export const addTimestampUnitToDate = (date, numUnits, timestampUnit) => {
+export const addTimestampUnitToDate = (
+  timestampUnit: TimestampUnit,
+  numUnits: number,
+  date: Date,
+): Date => {
   switch (timestampUnit) {
     case "h":
-      return addHours(date, numUnits);
+      return addHours(numUnits, date);
     case "d":
-      return addDays(date, numUnits);
+      return addDays(numUnits, date);
     case "w":
-      return addWeeks(date, numUnits);
+      return addWeeks(numUnits, date);
     case "m":
-      return addMonths(date, numUnits);
+      return addMonths(numUnits, date);
     case "y":
-      return addYears(date, numUnits);
+      return addYears(numUnits, date);
     default:
       return date;
   }
 };
 
 export const subtractTimestampUnitFromDate = (
-  date,
-  numUnits,
-  timestampUnit,
-) => {
+  timestampUnit: TimestampUnit,
+  numUnits: number,
+  date: Date,
+): Date => {
   switch (timestampUnit) {
     case "h":
-      return subHours(date, numUnits);
+      return subHours(numUnits, date);
     case "d":
-      return subDays(date, numUnits);
+      return subDays(numUnits, date);
     case "w":
-      return subWeeks(date, numUnits);
+      return subWeeks(numUnits, date);
     case "m":
-      return subMonths(date, numUnits);
+      return subMonths(numUnits, date);
     case "y":
-      return subYears(date, numUnits);
+      return subYears(numUnits, date);
     default:
       return date;
   }
 };
 
-export const applyRepeater = (timestamp, currentDate) => {
-  if (!timestamp.get("repeaterType")) {
+export const createNextRepeatTimestampPartObject = (
+  timestampWithRepeater: OrgTimestampPart,
+  nextRepeatDate: Date,
+): OrgTimestampPart => {
+  const [year, month, day, dayName, startHour, startMinute] =
+    getTimestampPartsFromDate(nextRepeatDate);
+  return merge(timestampWithRepeater, {
+    year,
+    month,
+    day,
+    dayName,
+    startHour,
+    startMinute,
+  });
+};
+
+export const createNextRepeatTimestampPartRecord = (
+  previousTimestamp: OrgTimestampPart,
+  nextRepeatDate: Date,
+): MapOf<OrgTimestampPart> => {
+  return Map(
+    createNextRepeatTimestampPartObject(previousTimestamp, nextRepeatDate),
+  );
+};
+
+export const getNextRepeatDate = (
+  {
+    repeaterType,
+    repeaterValue,
+    repeaterUnit,
+  }: {
+    repeaterType: RepeaterType;
+    repeaterValue: number;
+    repeaterUnit: RepeaterUnit;
+  },
+  timestampAsDate: Date,
+  currentDate: Date,
+): Date => {
+  return match(repeaterType)
+    .with(
+      "+",
+      (): Date =>
+        addTimestampUnitToDate(repeaterUnit, repeaterValue, timestampAsDate),
+    )
+    .with("++", (): Date => {
+      const newDate: Date = addTimestampUnitToDate(
+        repeaterUnit,
+        repeaterValue,
+        timestampAsDate,
+      );
+      if (isBefore(currentDate, newDate) || datesEqual(currentDate, newDate)) {
+        return getNextRepeatDate(
+          { repeaterType, repeaterValue, repeaterUnit },
+          newDate,
+          currentDate,
+        );
+      }
+      return newDate;
+    })
+    .with(".+", (): Date => {
+      const newDate = addTimestampUnitToDate(
+        repeaterUnit,
+        repeaterValue,
+        currentDate,
+      );
+      if (repeaterUnit == "h") {
+        return newDate;
+      }
+
+      const [newHours, newMinutes] = over([getHours, getMinutes])(currentDate);
+      return pipe([setHours(newHours), setMinutes(newMinutes)])(newDate);
+    })
+    .exhaustive();
+};
+
+const applyRepeaterReducer = (
+  currTimestamp: MapOf<OrgTimestampPart>,
+  [key, value]: [string, string],
+): MapOf<OrgTimestampPart> => {
+  return setIn(currTimestamp, [key], value);
+};
+
+export const applyRepeater = (
+  timestamp: MapOf<OrgTimestampPart>,
+  currentDate: Date,
+): MapOf<OrgTimestampPart> => {
+  const [repeaterType, repeaterValue, repeaterUnit] = over([
+    partialRight(get, ["repeaterType"]),
+    pipe([partialRight(get, ["repeaterValue"]), parseInt]),
+    partialRight(get, ["repeaterUnit"]),
+  ])(timestamp);
+
+  if (!repeaterType || !repeaterValue || !repeaterUnit) {
     return timestamp;
   }
 
-  let newDate = null;
-  switch (timestamp.get("repeaterType")) {
-    case "+":
-      newDate = addTimestampUnitToDate(
-        dateForTimestamp(timestamp),
-        timestamp.get("repeaterValue"),
-        timestamp.get("repeaterUnit"),
-      );
-      break;
-    case "++":
-      newDate = addTimestampUnitToDate(
-        dateForTimestamp(timestamp),
-        timestamp.get("repeaterValue"),
-        timestamp.get("repeaterUnit"),
-      );
-      while (isBefore(newDate, currentDate)) {
-        newDate = addTimestampUnitToDate(
-          newDate,
-          timestamp.get("repeaterValue"),
-          timestamp.get("repeaterUnit"),
-        );
-      }
-      break;
-    case ".+":
-      newDate = addTimestampUnitToDate(
-        currentDate,
-        timestamp.get("repeaterValue"),
-        timestamp.get("repeaterUnit"),
-      );
-      if (timestamp.get("repeaterUnit") !== "h") {
-        let timestampDate = dateForTimestamp(timestamp);
-        newDate = setHours(newDate, getHours(timestampDate));
-        newDate = setMinutes(newDate, getMinutes(timestampDate));
-      }
-      break;
-    default:
-      console.error(
-        `Unrecognized timestamp repeater type: ${timestamp.get("repeaterType")}`,
-      );
-      return timestamp;
+  if (!isValidRepeaterType(repeaterType)) {
+    console.error(`Unrecognized timestamp repeater type: ${repeaterType}`);
+    return timestamp;
   }
 
-  timestamp = timestamp
-    .set("day", format(newDate, "dd"))
-    .set("dayName", format(newDate, "eee"))
-    .set("month", format(newDate, "MM"))
-    .set("year", format(newDate, "yyyy"));
-
-  if (
-    timestamp.get("startHour") !== undefined &&
-    timestamp.get("startHour") !== null
-  ) {
-    timestamp = timestamp
-      .set("startHour", format(newDate, "HH"))
-      .set("startMinute", format(newDate, "mm"));
+  if (!isValidRepeaterUnit(repeaterUnit)) {
+    console.error(`Unrecognized timestamp repeater unit: ${repeaterUnit}`);
+    return timestamp;
   }
 
-  return timestamp;
+  const timestampAsDate = dateForTimestamp(timestamp);
+  const nextRepeatDate = getNextRepeatDate(
+    { repeaterType, repeaterValue, repeaterUnit },
+    timestampAsDate,
+    currentDate,
+  );
+
+  const timestampPartsFromDate =
+    getTimestampPartsFromDateWithKeyNames(nextRepeatDate);
+  return reduce(applyRepeaterReducer, timestamp, timestampPartsFromDate);
 };
 
-export const timestampDuration = (startTimestamp, endTimestamp) => {
-  let [start, end] = [startTimestamp, endTimestamp].map(dateForTimestamp);
-  return dateDuration(start, end);
+export const dateDuration = (
+  intervalStart: Date,
+  intervalEnd: Date,
+): string => {
+  const [start, end] = sortBy(identity, [intervalStart, intervalEnd]);
+  const hoursDiff: number = differenceInHours(start, end);
+  const minDiff: number = differenceInMinutes(addHours(hoursDiff, start), end);
+  const durationString = `${hoursDiff.toString()}:${padTimePart(minDiff.toString())}`;
+  return intervalStart > intervalEnd ? `-${durationString}` : durationString;
 };
 
-export const dateDuration = (start, end) => {
-  let pad = " ";
-  if (start > end) {
-    pad = "-";
-    [start, end] = [end, start];
-  }
-  const minDiff = differenceInMinutes(end, start);
-  const hours = Math.floor(minDiff / 60);
-  if (hours >= 10) {
-    pad = "";
-  }
-  const minutes = minDiff % 60;
-  const minutesText = minutes >= 10 ? minutes : `0${minutes}`;
-  return `${pad}${hours}:${minutesText}`;
+export const dateDurationForClockString = pipe([
+  dateDuration,
+  padCharsStart(" ", 5)
+])
+
+export const createTimestampDuration = (func: (intervalStart: Date, intervalEnd: Date) => string) => (
+  startTimestamp: MapOf<OrgTimestampPart>,
+  endTimestamp: MapOf<OrgTimestampPart>,
+): string => {
+  let [start, end] = map(dateForTimestamp)([startTimestamp, endTimestamp]);
+  return func(start, end);
 };
 
-export const millisDuration = (millis) => {
+export const timestampDuration = createTimestampDuration(dateDuration)
+export const timestampDurationForClockString = createTimestampDuration(dateDurationForClockString)
+
+export const millisDuration = (millis: number | undefined): string => {
   if (millis === undefined) {
     return "";
   }

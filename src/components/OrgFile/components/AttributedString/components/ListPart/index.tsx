@@ -10,7 +10,7 @@ import { listPartContainsItemId } from "../../../../../../lib/org_utils";
 
 import { attributedStringToRawText } from "../../../../../../lib/export_org";
 
-import { getCurrentTimestampAsText } from "../../../../../../lib/timestamps";
+import { getCurrentJSDateAsOrgTimestampString } from "../../../../../../lib/timestamps";
 
 import { bindAll } from "lodash";
 import classNames from "classnames";
@@ -203,7 +203,7 @@ export default class ListPart extends PureComponent {
       listTitleValues: listTitleValues.set(
         selectedListItemId,
         listTitleValue.substring(0, insertionIndex) +
-          getCurrentTimestampAsText() +
+          getCurrentJSDateAsOrgTimestampString() +
           listTitleValue.substring(
             this.textarea.selectionEnd || insertionIndex,
           ),
@@ -227,7 +227,7 @@ export default class ListPart extends PureComponent {
       listContentsValues: listContentsValues.set(
         selectedListItemId,
         listContentsValue.substring(0, insertionIndex) +
-          getCurrentTimestampAsText() +
+          getCurrentJSDateAsOrgTimestampString() +
           listContentsValue.substring(
             this.textarea.selectionEnd || insertionIndex,
           ),

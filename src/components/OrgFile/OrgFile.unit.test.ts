@@ -27,7 +27,7 @@ const parseAndExportOrgFile = (testOrgFile: string, dontIndent = false) => {
     dontIndent: dontIndent,
   });
   return exportedFile;
-}
+};
 
 describe("Tests for export", () => {
   const createSimpleHeaderWithDescription = (description) =>

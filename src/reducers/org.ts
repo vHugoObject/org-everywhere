@@ -1,5 +1,4 @@
 import { fromJS, List, Map, type MapOf } from "immutable";
-import { match, P } from "ts-pattern";
 import { isEmpty, times } from "lodash";
 import {
   hasActiveClock,
@@ -85,8 +84,8 @@ import {
 } from "../lib/parse_org";
 import {
   applyRepeater,
-  getTimestampAsText,
-  timestampForDate,
+  getJSDateAsOrgTimestampString,
+  timestampPartObjectForDate,
 } from "../lib/timestamps";
 import { formatTextWrap } from "../util/misc";
 import { applyFileSettingsFromConfig } from "../util/settings_persister";
@@ -310,7 +309,7 @@ const advanceTodoState = (
     headerId: number;
     logIntoDrawer: boolean;
     dirtying: boolean;
-    timestamp: MapOf<OrgTimestamp>;
+    timestamp: Date;
   },
 ): MapOf<OrgFile> => {
   const { headerId, logIntoDrawer, timestamp } = action;
@@ -372,7 +371,7 @@ const setTodoState = (
     headerId: number;
     logIntoDrawer: boolean;
     dirtying: boolean;
-    timestamp: MapOf<OrgTimestamp>;
+    timestamp: Date;
   },
 ): MapOf<OrgFile> => {
   const { headerId, logIntoDrawer, newTodoState, timestamp } = action;
@@ -1025,7 +1024,7 @@ const addNote = (
   );
   // Generate note based on a template string (as defined in Emacs Org
   // mode `org-log-note-headings`):
-  const timestamp = getTimestampAsText(currentDate, {
+  const timestamp = getJSDateAsOrgTimestampString(currentDate, {
     isActive: false,
     withStartTime: true,
   });
@@ -2126,7 +2125,7 @@ const addNewPlanningItem = (
     headerId: number;
     planningType: PlanningType;
     dirtying: boolean;
-    timestamp: MapOf<OrgTimestamp>;
+    timestamp: Date;
   },
 ): MapOf<OrgFile> => {
   const headerIndex = indexOfHeaderWithId(
@@ -2137,7 +2136,7 @@ const addNewPlanningItem = (
   const newPlanningItem = fromJS({
     id: generateId(),
     type: action.planningType,
-    timestamp: timestampForDate(action.timestamp),
+    timestamp: timestampPartObjectForDate(action.timestamp),
   });
 
   return state.updateIn(
@@ -3059,10 +3058,10 @@ function addTodoStateChangeLogItem(
   newTodoState: string,
   currentTodoState: string,
   logIntoDrawer: boolean,
-  timestamp: MapOf<OrgTimestamp>,
+  timestamp: Date,
 ): MapOf<OrgFile> {
   // This is how the TODO state change will be logged
-  const inactiveTimestamp = getTimestampAsText(timestamp, {
+  const inactiveTimestamp = getJSDateAsOrgTimestampString(timestamp, {
     isActive: false,
     withStartTime: true,
   });
@@ -3199,7 +3198,7 @@ function updatePlanningItemsWithRepeaters({
     currentTodoSet.get("keywords").first(),
   );
   if (!noLogRepeatEnabledP({ state, headerIndex })) {
-    const lastRepeatTimestamp = timestampForDate(timestamp, {
+    const lastRepeatTimestamp = timestampPartObjectForDate(timestamp, {
       isActive: false,
       withStartTime: true,
     });

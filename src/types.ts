@@ -17,22 +17,23 @@ export interface RGBA {
 
 export type OrgTimestampPart = {
   isActive: boolean;
+  withStartTime: boolean;
   year: string;
   month: string;
   day: string;
-  dayName: string | undefined;
-  startHour: string | undefined;
-  startMinute: string | undefined;
-  endHour: string | undefined;
-  endMinute: string | undefined;
-  repeaterType: string | undefined;
-  repeaterValue: string | undefined;
-  repeaterUnit: string | undefined;
-  delayType: string | undefined;
-  delayValue: string | undefined;
-  delayUnit: string | undefined;
-  repeaterDeadlineValue: string | undefined;
-  repeaterDeadlineUnit: string | undefined;
+  dayName: string | undefined | null;
+  startHour: string;
+  startMinute: string;
+  endHour: string | undefined | null;
+  endMinute: string | undefined | null;
+  repeaterType: string | undefined | null;
+  repeaterValue: string | undefined | null;
+  repeaterUnit: string | undefined | null;
+  delayType: string | undefined | null;
+  delayValue: string | undefined | null;
+  delayUnit: string | undefined | null;
+  repeaterDeadlineValue: string | undefined | null;
+  repeaterDeadlineUnit: string | undefined | null;
 };
 
 export type OrgLinkToken = {
@@ -122,9 +123,11 @@ export type OrgMarkupType =
   | "verbatim";
 
 export type AgendaTimeframe = "Week" | "Day" | "Month";
-export type TimestampUnits = "h" | "d" | "m" | "w" | "y";
-export type DelayUnit = TimestampUnits;
-export type RepeaterUnit = TimestampUnits;
+export type TimestampUnit = "h" | "d" | "m" | "w" | "y";
+export type DelayUnit = TimestampUnit;
+export type RepeaterUnit = TimestampUnit;
+export type RepeaterType = "+" | "++" | ".+";
+export type DelayType = "-" | "--";
 
 export type LogEntryType = "start" | "end";
 export type PlanningType = "DEADLINE" | "SCHEDULED";
@@ -202,10 +205,11 @@ export type OrgPlanningItemType = "SCHEDULED" | "DEADLINE";
 
 export type OrgPlanningItem = {
   type: OrgPlanningItemType;
-  timestamp: OrgTimestamp;
+  timestamp: MapOf<OrgTimestampPart>;
 };
 
 export type OrgPropertyListItem = {
+  type: "property-list-item";
   property: string;
   value: List<MapOf<OrgText> | MapOf<OrgTimestamp> | null>;
   id: number;
@@ -214,6 +218,7 @@ export type OrgPropertyListItem = {
 export type OrgCheckboxState = "unchecked" | "checked" | "partial";
 
 export type OrgListItem = {
+  type: "list-item";
   id: number;
   titleLine: List<MapOf<OrgTitleElement>>;
   contents: any;
@@ -259,6 +264,7 @@ export type OrgTitleElement =
   | OrgCookie;
 
 export type OrgTitleLine = {
+  type: "title-line";
   title: List<MapOf<OrgTitleElement>>;
   rawTitle: string;
   todoKeyword: string;
@@ -266,6 +272,7 @@ export type OrgTitleLine = {
 };
 
 export type OrgHeadline = {
+  title: "headline";
   titleLine: MapOf<OrgTitleLine>;
   rawDescription: string;
   description: List<any>;

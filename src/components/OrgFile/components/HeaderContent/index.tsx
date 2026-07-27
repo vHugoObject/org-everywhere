@@ -13,7 +13,7 @@ import { bindAll } from "lodash";
 import * as orgActions from "../../../../actions/org";
 import * as baseActions from "../../../../actions/base";
 
-import { getCurrentTimestampAsText } from "../../../../lib/timestamps";
+import { getCurrentJSDateAsOrgTimestampString } from "../../../../lib/timestamps";
 import { createRawDescriptionText } from "../../../../lib/export_org";
 
 import AttributedString from "../AttributedString";
@@ -151,7 +151,7 @@ class HeaderContent extends PureComponent {
     this.setState({
       descriptionValue:
         descriptionValue.substring(0, insertionIndex) +
-        getCurrentTimestampAsText() +
+        getCurrentJSDateAsOrgTimestampString() +
         descriptionValue.substring(
           this.textarea.selectionEnd || insertionIndex,
         ),

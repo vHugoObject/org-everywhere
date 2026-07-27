@@ -8,7 +8,7 @@ import { FaPlus } from "react-icons/fa";
 import TabButtons from "../../../UI/TabButtons";
 
 import { generateTitleLine } from "../../../../lib/export_org";
-import { getCurrentTimestampAsText } from "../../../../lib/timestamps";
+import { getCurrentJSDateAsOrgTimestampString } from "../../../../lib/timestamps";
 import { todoKeywordSetForKeyword } from "../../../../lib/org_utils";
 
 export default class TitleEditorModal extends PureComponent {
@@ -102,7 +102,7 @@ export default class TitleEditorModal extends PureComponent {
     this.setState({
       titleValue:
         titleValue.substring(0, insertionIndex) +
-        getCurrentTimestampAsText() +
+        getCurrentJSDateAsOrgTimestampString() +
         titleValue.substring(this.textarea.selectionEnd || insertionIndex),
     });
 

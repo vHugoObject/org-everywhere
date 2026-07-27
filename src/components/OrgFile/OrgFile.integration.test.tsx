@@ -11,7 +11,7 @@ import readFixture from "../../../test_helpers/index";
 import rootReducer from "../../reducers/";
 import { setPath, parseFile } from "../../actions/org";
 import { setShouldLogIntoDrawer } from "../../actions/base";
-import { getCurrentTimestampAsText } from "../../lib/timestamps";
+import { getCurrentJSDateAsOrgTimestampString } from "../../lib/timestamps";
 import { convertToSet } from "../../util/transformers";
 import { Map, Set, fromJS, List } from "immutable";
 import { formatDistanceToNow } from "date-fns";

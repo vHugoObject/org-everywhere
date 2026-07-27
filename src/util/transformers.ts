@@ -36,9 +36,20 @@ import {
   floor,
   multiply,
   compact,
+  filter,
+  constant,
+  lt,
 } from "lodash/fp";
 import { addDays, subDays, addWeeks, addMonths, addYears } from "date-fns/fp";
 import type { ReadonlyNonEmptyArray } from "fp-ts/ReadonlyNonEmptyArray";
+import { sequenceT } from "fp-ts/Apply";
+import { pipe as fpipe } from "fp-ts/function";
+import {
+  prepend,
+  Applicative as readonlyArrayApplicative,
+  map as arrayMap,
+  reduceRight,
+} from "fp-ts/ReadonlyArray";
 
 const filterMap = curry(pipe([map, compact]));
 
@@ -407,3 +418,36 @@ export const reduceReplaceAll = (
     valuesToReplace,
   );
 };
+
+export const liftA2 =
+  <A, B, C>(f: (a: A) => (b: B) => C) =>
+  (fa: ReadonlyArray<A>) =>
+  (fb: ReadonlyArray<B>): ReadonlyArray<C> => {
+    return fpipe(
+      sequenceT(readonlyArrayApplicative)(fa, fb),
+      arrayMap(([x, y]) => f(x)(y)),
+    );
+  };
+export const foldr =
+  <A, B>(f: (a: A) => (b: B) => B) =>
+  (b: B) =>
+  (ta: ReadonlyArray<A>): B => {
+    return reduceRight(b, (a: A, b: B) => f(a)(b))(ta);
+  };
+
+export const filterM = <A>(p: (arg: A) => ReadonlyArray<boolean>) => {
+  return foldr(
+    (x: A) => (acc: ReadonlyArray<ReadonlyArray<A>>) =>
+      liftA2(
+        (flg: boolean) => (accx: ReadonlyArray<A>) =>
+          flg ? prepend(x)(accx) : accx,
+      )(p(x))(acc),
+  )([[]]);
+};
+
+export const arraySubsets = filterM(constant([true, false]));
+
+export const arrayCombinations = pipe([
+  arraySubsets,
+  filter(pipe([size, lt(1)])),
+]);

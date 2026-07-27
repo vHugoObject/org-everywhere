@@ -208,9 +208,9 @@ export default class AgendaDay extends PureComponent {
                     );
                   if (timestamp.get("delayType") === "--" && !hasBeenRepeated) {
                     appearDate = addTimestampUnitToDate(
-                      planningItemDate,
-                      timestamp.get("delayValue"),
                       timestamp.get("delayUnit"),
+                      timestamp.get("delayValue"),
+                      planningItemDate,
                     );
                   }
                 }

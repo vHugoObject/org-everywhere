@@ -2,7 +2,7 @@ import { countBy, times, flatten, dropRight } from "lodash";
 import { fromJS } from "immutable";
 
 import { isRegularPlanningItem, subheadersOfHeaderWithId } from "./org_utils";
-import { renderAsText, timestampDuration } from "./timestamps";
+import { renderAsText, timestampDurationForClockString } from "./timestamps";
 
 const linkPartToRawText = (linkPart) => {
   if (!!linkPart.getIn(["contents", "title"])) {
@@ -384,7 +384,7 @@ export const createRawDescriptionText = (header, includeTitle, dontIndent) => {
         } else {
           return `${indentation}CLOCK: ${renderAsText(fromJS(entry.start))}--${renderAsText(
             fromJS(entry.end),
-          )} => ${timestampDuration(fromJS(entry.start), fromJS(entry.end))}`;
+          )} => ${timestampDurationForClockString(fromJS(entry.start), fromJS(entry.end))}`;
         }
       })
       .join("\n")

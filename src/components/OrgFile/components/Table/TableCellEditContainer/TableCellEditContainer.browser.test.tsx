@@ -7,7 +7,7 @@ import { Provider } from "react-redux";
 import { createStore, applyMiddleware } from "redux";
 
 import rootReducer from "../../../../../reducers/";
-import { getCurrentTimestampAsText } from "../../../../../lib/timestamps";
+import { getCurrentJSDateAsOrgTimestampString } from "../../../../../lib/timestamps";
 
 import {
   setPath,
@@ -28,8 +28,6 @@ import { Map, Set, fromJS, List } from "immutable";
 import { pipe, shuffle, range, first, curry, trim } from "lodash/fp";
 import { render, fireEvent, cleanup } from "@testing-library/react";
 import TableCellEditContainer from "./index";
-
-
 
 const capture = Map({ captureTemplates: [] });
 const testBaseState = {
@@ -71,7 +69,7 @@ describe("TableCellEditContainer tests", () => {
   const testDescriptionItemIndex = 0;
 
   const editCellContainerId = "edit-cell-container";
-  const expectedTimestamp = getCurrentTimestampAsText();
+  const expectedTimestamp = getCurrentJSDateAsOrgTimestampString();
 
   const randomArrayValue = pipe([shuffle, first]);
   const randomArrayIndex = pipe([range(0), randomArrayValue]);

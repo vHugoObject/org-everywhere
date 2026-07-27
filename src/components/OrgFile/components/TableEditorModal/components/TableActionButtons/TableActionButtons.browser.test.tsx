@@ -27,8 +27,6 @@ import {
 } from "../../../../../../lib/org_utils";
 import TableActionButtons from "./index";
 
-
-
 const capture = Map({ captureTemplates: [] });
 const testBaseState = {
   org: {
@@ -52,7 +50,7 @@ const testBaseState = {
     isAuthenticated: true,
   }),
   capture,
-  base: new fromJS({
+  base: fromJS({
     customKeybindings: {},
     shouldTapTodoToAdvance: true,
     isLoading: Set(),

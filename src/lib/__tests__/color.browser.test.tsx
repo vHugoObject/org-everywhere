@@ -6,7 +6,7 @@ import { cleanup, render } from "@testing-library/react";
 import { pipe } from "lodash/fp";
 import { themes } from "../themes";
 import { loadTheme, getThemeFromThemeObject } from "../color";
-import { fastCheckRandomObjectKeyValuePair } from "../../../test_helpers/TestDataGenerators";
+import { fcRandomObjectKeyValuePair } from "../../../test_helpers/TestDataGenerators";
 
 describe("color test suite", async () => {
   const testThemes: Array<string> = Object.keys(themes);
@@ -25,7 +25,7 @@ describe("color test suite", async () => {
               string,
             ] = pipe([
               getThemeFromThemeObject,
-              fastCheckRandomObjectKeyValuePair(fcGen),
+              fcRandomObjectKeyValuePair(fcGen),
             ])(testTheme, testColorScheme);
 
             render(<div></div>);

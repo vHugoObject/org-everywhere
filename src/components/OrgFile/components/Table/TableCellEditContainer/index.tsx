@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { FaPlus } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { curry } from "lodash/fp";
-import { getCurrentTimestampAsText } from "../../../../../lib/timestamps";
+import { getCurrentJSDateAsOrgTimestampString } from "../../../../../lib/timestamps";
 import { exitEditMode, updateTableCellValue } from "../../../../../actions/org";
 import "./stylesheet.css";
 
@@ -59,7 +59,7 @@ const CellEditContainer = ({
     const insertionIndex = textareaRef?.current?.selectionStart;
     const newValue =
       currentCellValue.substring(0, insertionIndex) +
-      getCurrentTimestampAsText() +
+      getCurrentJSDateAsOrgTimestampString() +
       currentCellValue.substring(
         textareaRef?.current?.selectionEnd || insertionIndex,
       );

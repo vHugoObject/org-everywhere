@@ -15,6 +15,12 @@ export const TESTLOWERCASELETTERSRANGE: [number, number] = [97, 122];
 export const TESTUPPERCASELETTERSRANGE: [number, number] = [65, 90];
 export const DOUBLEBETWEENZEROAND1RANGE: [number, number] = [0.1, 0.99];
 
+export const TESTSECONDSINAMINUTE: number = 60;
+export const TESTSECONDSINANHOUR: number = 3600;
+export const TESTSECONDSINADAY: number = 86400;
+export const TESTMINHOURSDIFF: number = 2;
+export const TESTMINDAYSDIFF: number = 2;
+
 export const TESTORGCAPTURETEMPLATES: Array<string> = [
   "%t",
   "%T",
@@ -163,7 +169,26 @@ export const TESTORGDURATIONUNITSSET: Set<string> = new Set([
   "y",
 ]);
 
-export const TESTREPEATERTYPESSET: Set<string> = new Set(["++", ".+", "+"]);
+export const TESTREPEATERTYPES: Array<string> = ["++", ".+", "+"];
+export const TESTREPEATERTYPESSET: Set<string> = new Set(TESTREPEATERTYPES);
+
+export const TESTREPEATERUNITS: Array<string> = ["h", "d", "w", "m", "y"];
+export const TESTREPEATERUNITSWITHOUTHOURS: Array<string> = [
+  "d",
+  "w",
+  "m",
+  "y",
+];
+export const TESTREPEATERUNITSSET: Set<string> = new Set(TESTREPEATERUNITS);
+
+export const TESTDEADLINEUNITS: Array<string> = TESTREPEATERUNITS;
+export const TESTDEADLINEUNITSSET: Set<string> = TESTREPEATERUNITSSET;
+
+export const TESTDELAYTYPES: Array<string> = ["-", "--"];
+export const TESTDELAYTYPESSET: Set<string> = new Set(TESTDELAYTYPES);
+
+export const TESTDELAYUNITS: Array<string> = TESTREPEATERUNITS;
+export const TESTDELAYUNITSSET: Set<string> = TESTREPEATERUNITSSET;
 
 export const TESTPLANNINGITEMTYPES: Array<string> = [
   "DEADLINE",
@@ -638,3 +663,120 @@ export const TESTFILEEXTENSIONS: Array<string> = [
 ];
 
 export const TESTSLASHES = ["\\", "/"];
+
+export const REGULARTIMESTAMPTESTCASES = [
+  {
+    isActive: true,
+    withStartTime: true,
+    withEndTime: true,
+    withRepeater: true,
+    withDeadline: true,
+    withDelay: true,
+  },
+  {
+    isActive: true,
+    withStartTime: true,
+    withEndTime: true,
+    withRepeater: true,
+    withDeadline: true,
+  },
+  {
+    isActive: true,
+    withStartTime: true,
+    withEndTime: true,
+    withRepeater: true,
+    withDelay: true,
+  },
+  {
+    isActive: true,
+    withStartTime: true,
+    withEndTime: true,
+    withRepeater: true,
+  },
+  {
+    isActive: true,
+    withStartTime: true,
+    withEndTime: true,
+    withDelay: true,
+  },
+  { isActive: true, withStartTime: true, withEndTime: true },
+  {
+    isActive: true,
+    withStartTime: true,
+    withRepeater: true,
+    withDeadline: true,
+    withDelay: true,
+  },
+  {
+    isActive: true,
+    withStartTime: true,
+    withRepeater: true,
+    withDeadline: true,
+  },
+  {
+    isActive: true,
+    withStartTime: true,
+    withRepeater: true,
+    withDelay: true,
+  },
+  { isActive: true, withStartTime: true, withRepeater: true },
+  { isActive: true, withStartTime: true, withDelay: true },
+  { isActive: true, withStartTime: true },
+  {
+    isActive: true,
+    withRepeater: true,
+    withDeadline: true,
+    withDelay: true,
+  },
+  { isActive: true, withRepeater: true, withDeadline: true },
+  { isActive: true, withRepeater: true, withDelay: true },
+  { isActive: true, withRepeater: true },
+  { isActive: true, withDelay: true },
+  {
+    withStartTime: true,
+    withEndTime: true,
+    withRepeater: true,
+    withDeadline: true,
+    withDelay: true,
+  },
+  {
+    withStartTime: true,
+    withEndTime: true,
+    withRepeater: true,
+    withDeadline: true,
+  },
+  {
+    withStartTime: true,
+    withEndTime: true,
+    withRepeater: true,
+    withDelay: true,
+  },
+  { withStartTime: true, withEndTime: true, withRepeater: true },
+  { withStartTime: true, withEndTime: true, withDelay: true },
+  { withStartTime: true, withEndTime: true },
+  {
+    withStartTime: true,
+    withRepeater: true,
+    withDeadline: true,
+    withDelay: true,
+  },
+  { withStartTime: true, withRepeater: true, withDeadline: true },
+  { withStartTime: true, withRepeater: true, withDelay: true },
+  { withStartTime: true, withRepeater: true },
+  { withStartTime: true, withDelay: true },
+  { withRepeater: true, withDeadline: true, withDelay: true },
+  { withRepeater: true, withDeadline: true },
+  { withRepeater: true, withDelay: true },
+];
+
+export const TIMESTAMPSWITHREPEATERTESTCASES = [
+  { repeaterType: "+", withStartTime: true, withDeadline: true },
+  { repeaterType: "+", withStartTime: true, withDeadline: false },
+  { repeaterType: "+", withStartTime: false, withDeadline: false },
+  { repeaterType: "++", withStartTime: true, withDeadline: true },
+  { repeaterType: "++", withStartTime: true, withDeadline: false },
+  { repeaterType: "++", withStartTime: false, withDeadline: false },
+  { repeaterType: ".+", withStartTime: true, withDeadline: true },
+  { repeaterType: ".+", withStartTime: true, withDeadline: false },
+  { repeaterType: ".+", withStartTime: false, withDeadline: false },
+];

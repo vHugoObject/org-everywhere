@@ -6,7 +6,7 @@ import { getIcon } from "../../../UI/icons.tsx";
 
 import { isMobileBrowser } from "../../../../lib/browser_utils";
 import { createRawDescriptionText } from "../../../../lib/export_org";
-import { getCurrentTimestampAsText } from "../../../../lib/timestamps";
+import { getCurrentJSDateAsOrgTimestampString } from "../../../../lib/timestamps";
 
 class DescriptionEditorModal extends PureComponent {
   constructor(props) {
@@ -83,7 +83,7 @@ class DescriptionEditorModal extends PureComponent {
     this.setState({
       descriptionValue:
         descriptionValue.substring(0, insertionIndex) +
-        getCurrentTimestampAsText() +
+        getCurrentJSDateAsOrgTimestampString() +
         descriptionValue.substring(
           this.textarea.selectionEnd || insertionIndex,
         ),

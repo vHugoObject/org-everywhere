@@ -130,7 +130,7 @@ const resolveTo = (to) => {
   } else if (to.type === "special") {
     return toSpecial(to);
   } else if (to.type === "offset") {
-    return addTimestampUnitToDate(new Date(), to.value, to.unit);
+    return addTimestampUnitToDate(to.unit, to.value, new Date());
   } else if (to.type === "unit") {
     return toUnit(new Date(), to.unit);
   }
@@ -177,7 +177,7 @@ export const timeFilter = (filterDescription) => {
       );
     } else if (to.type === "offset") {
       lower = resolveFrom(from);
-      upper = addTimestampUnitToDate(new Date(lower), to.value, to.unit);
+      upper = addTimestampUnitToDate(to.unit, to.value, new Date(lower));
     } else if (from.type === "unit") {
       upper = resolveTo(to);
       lower = fromUnit(upper, from.unit);

@@ -33,6 +33,7 @@ export const convertArraysToSetsAndAssertStrictEqual = pipe([
 ]);
 
 export const assertNumbers = map(assert.isNumber);
+export const assertStrings = map(assert.isString);
 
 export const assertIsDate = (value: any): void => {
   assert.instanceOf(value, Date);

@@ -20,6 +20,11 @@ import {
   trim,
   trimEnd,
   endsWith,
+  map,
+  stubTrue,
+  cond,
+  isString,
+  constant,
 } from "lodash/fp";
 import type {
   OrgTimestampType,
@@ -41,6 +46,7 @@ import type {
   OrgPropertyListItem,
 } from "../types";
 import { ORGCHECKBOXSTATEMAPPING } from "./constants";
+import { isValidRepeaterType, isValidDelayType } from "./timestamps";
 
 // TODO: Extract all match groups of `beginningRegexp` (for example
 // like `emailRegexp`), so that they can be documented and are less
@@ -156,61 +162,79 @@ const timestampFromRegexMatch = (
     secondDelayRepeatUnit,
     secondRepeaterDeadlineValue,
     secondRepeaterDeadlineUnit,
-  ] = partIndices.map(
-    (partIndex: number): string | undefined => match[partIndex],
+  ] = map((partIndex: number): string | undefined => match[partIndex])(
+    partIndices,
   );
 
   if (!year || !month || !day) {
     return null;
   }
 
-  const [startHour, startMinute] = !!timeStart ? timeStart.split(":") : [];
+  const [startHour, startMinute] = !!timeStart
+    ? timeStart.split(":")
+    : ["00", "00"];
   const [endHour, endMinute] = !!timeEnd ? timeEnd.split(":") : [];
 
-  let repeaterType,
+  const [
+    repeaterType,
     repeaterValue,
     repeaterUnit,
     repeaterDeadlineValue,
-    repeaterDeadlineUnit;
-  let delayType, delayValue, delayUnit;
+    repeaterDeadlineUnit,
+  ] = cond<Array<string | undefined>>([
+    [
+      () =>
+        isValidRepeaterType(firstDelayRepeatType),
+      constant([
+        firstDelayRepeatType,
+        firstDelayRepeatValue,
+        firstDelayRepeatUnit,
+        firstRepeaterDeadlineValue,
+        firstRepeaterDeadlineUnit,
+      ]),
+    ],
+    [
+      () =>
+        isValidRepeaterType(secondDelayRepeatType),
+      constant([
+        secondDelayRepeatType,
+        secondDelayRepeatValue,
+        secondDelayRepeatUnit,
+        secondRepeaterDeadlineValue,
+        secondRepeaterDeadlineUnit,
+      ]),
+    ],
+    [
+      stubTrue,
+      constant([undefined, undefined, undefined, undefined, undefined]),
+    ],
+  ])();
 
-  if (
-    firstDelayRepeatType &&
-    ["+", "++", ".+"].includes(firstDelayRepeatType)
-  ) {
-    repeaterType = firstDelayRepeatType;
-    repeaterValue = firstDelayRepeatValue;
-    repeaterUnit = firstDelayRepeatUnit;
-    repeaterDeadlineValue = firstRepeaterDeadlineValue;
-    repeaterDeadlineUnit = firstRepeaterDeadlineUnit;
-  } else if (
-    firstDelayRepeatType &&
-    ["-", "--"].includes(firstDelayRepeatType)
-  ) {
-    delayType = firstDelayRepeatType;
-    delayValue = firstDelayRepeatValue;
-    delayUnit = firstDelayRepeatUnit;
-  }
-  if (
-    secondDelayRepeatType &&
-    ["+", "++", ".+"].includes(secondDelayRepeatType)
-  ) {
-    repeaterType = secondDelayRepeatType;
-    repeaterValue = secondDelayRepeatValue;
-    repeaterUnit = secondDelayRepeatUnit;
-    repeaterDeadlineValue = secondRepeaterDeadlineValue;
-    repeaterDeadlineUnit = secondRepeaterDeadlineUnit;
-  } else if (
-    secondDelayRepeatType &&
-    ["-", "--"].includes(secondDelayRepeatType)
-  ) {
-    delayType = secondDelayRepeatType;
-    delayValue = secondDelayRepeatValue;
-    delayUnit = secondDelayRepeatUnit;
-  }
+  const [delayType, delayValue, delayUnit] = cond<Array<string | undefined>>([
+    [
+      () =>
+        isValidDelayType(firstDelayRepeatType),
+      constant([
+        firstDelayRepeatType,
+        firstDelayRepeatValue,
+        firstDelayRepeatUnit,
+      ]),
+    ],
+    [
+      () =>
+        isValidDelayType(secondDelayRepeatType),
+      constant([
+        secondDelayRepeatType,
+        secondDelayRepeatValue,
+        secondDelayRepeatUnit,
+      ]),
+    ],
+    [stubTrue, constant([undefined, undefined, undefined])],
+  ])();
 
   return {
     isActive: typeBracket === "<",
+    withStartTime: !!timeStart,
     year,
     month,
     day,
@@ -820,7 +844,7 @@ export const _parseLogNotes = (rawText: string) => {
   return makeLogNotesResult([], [rawText]);
 };
 
-export const parseDescriptionPrefixs = (rawText: string) => {
+export const parseDescriptionPrefixElements = (rawText: string) => {
   const planningItemsParse = _parsePlanningItems(rawText);
 
   const planningItems = planningItemsParse.planningItems;
@@ -852,7 +876,7 @@ export const _updateHeaderFromDescription = (
     logNotes,
     logBookEntries,
     strippedDescription,
-  } = parseDescriptionPrefixs(rawUnstrippedDescription);
+  } = parseDescriptionPrefixElements(rawUnstrippedDescription);
   const parsedDescription = parseRawText(strippedDescription);
 
   const parsedTitle = header.getIn(["titleLine", "title"]);

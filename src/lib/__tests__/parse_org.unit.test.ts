@@ -1,14 +1,18 @@
 /* eslint jest/expect-expect: ["error", { "assertFunctionNames": ["expect", "expectNewSetFromLine", "expectType"] }] */
 import { describe, expect } from "vitest";
 import { test, fc } from "@fast-check/vitest";
+import { forEach } from "lodash/fp";
+import type { OrgElement, OrgTimestampPart } from "../../types";
 import readFixture from "../../../test_helpers/index";
+import { RENDERASTEXTESTCASES } from "./test_constants.ts";
 import {
   fcRandomStringGenerator,
   fcNLengthUniqueStringArrayGenerator,
-  fcGenerateOrgHeadingAsString,
+  fcGenOrgHeadingAsString,
   fcRandomInBufferSetting,
   fcRandomAlphaString,
-  fcGenerateRandomOrgHeadingAsString,
+  fcGenRandomOrgHeadingAsString,
+  fcGenOrgTimestampPartRecord,
 } from "../../../test_helpers/TestDataGenerators";
 import { createHeadingStars } from "../org_utils";
 import {
@@ -21,10 +25,15 @@ import {
   computeNestingLevel,
 } from "../parse_org";
 
-const expectType = (result) => expect(result.map((x) => x.type));
-const parseFirstHeaderFromOrg = (x) => parseOrg(x).toJS().headers[0];
+const expectType = (result: Array<OrgElement>) =>
+  expect(result.map((x: OrgElement) => x.type));
 
-function testTimestamp(actual, expected) {
+const parseFirstHeaderFromOrg = (x: string) => parseOrg(x).toJS().headers[0];
+
+const testTimestamp = (
+  actual: OrgTimestampPart,
+  expected: OrgTimestampPart,
+) => {
   if (expected == null) expect(actual).toBeNull();
   else {
     // Every key in expected should be present in actual and the values should match
@@ -38,26 +47,26 @@ function testTimestamp(actual, expected) {
         expect(actual[key]).toBeUndefined(),
     );
   }
-}
-function testTimestampText(
-  text,
-  expectedFirstTimestamp,
-  expectedSecondTimestamp,
-) {
+};
+const testTimestampText = (
+  text: string,
+  expectedFirstTimestamp: OrgTimestampPart,
+  expectedSecondTimestamp?: OrgTimestampPart,
+) => {
   // eslint-disable-next-line jest/expect-expect
   test(`Parse ${text}`, () => {
     const [{ firstTimestamp, secondTimestamp }] = parseRawText(text).toJS();
     testTimestamp(firstTimestamp, expectedFirstTimestamp);
     testTimestamp(secondTimestamp, expectedSecondTimestamp);
   });
-}
+};
 
 describe("Test the parser", () => {
   describe("computeNestingLevel", () => {
     test.prop([fc.integer({ min: 1, max: 15 }), fc.gen()])(
       "test with normal headline",
       (expectedNestingLevel, fcGen) => {
-        const [testHeadline] = fcGenerateOrgHeadingAsString(
+        const [testHeadline] = fcGenOrgHeadingAsString(
           expectedNestingLevel,
           fcGen,
         );
@@ -100,7 +109,7 @@ describe("Test the parser", () => {
     test.prop([fc.gen()])(
       "Parse headline with trailing newline but no description",
       (fcGen) => {
-        const testHeadline: string = `${fcGenerateRandomOrgHeadingAsString(fcGen)}\n`;
+        const testHeadline: string = `${fcGenRandomOrgHeadingAsString(fcGen)}\n`;
         const result = parseFirstHeaderFromOrg(testHeadline);
         expect(result.description).toEqual([]);
         expect(result.rawDescription).toEqual("");
@@ -109,7 +118,7 @@ describe("Test the parser", () => {
     test.prop([fc.gen()])(
       "Parse headline with an empty line of description",
       (fcGen) => {
-        const testHeadline: string = `${fcGenerateRandomOrgHeadingAsString(fcGen)}\n\n`;
+        const testHeadline: string = `${fcGenRandomOrgHeadingAsString(fcGen)}\n\n`;
         const result = parseFirstHeaderFromOrg(testHeadline);
         expect(result.description.length).toEqual(1);
         expect(result.rawDescription).toEqual("\n");
@@ -159,10 +168,7 @@ describe("Test the parser", () => {
     test.prop([fc.gen(), fc.integer({ min: 1, max: 15 })])(
       "Normal headline",
       (fcGen, testStarCount) => {
-        const [testHeadline] = fcGenerateOrgHeadingAsString(
-          testStarCount,
-          fcGen,
-        );
+        const [testHeadline] = fcGenOrgHeadingAsString(testStarCount, fcGen);
         const result = parseTodoKeywordConfig(testHeadline);
         expect(result).toBeNull();
       },
@@ -188,115 +194,36 @@ describe("Test the parser", () => {
     test("Planning items should contain active timestamps from title and description as well", () => {
       const testOrgFile = readFixture("schedule_and_timestamps");
       const parsedFile = parseOrg(testOrgFile);
-      const headers = parsedFile.get("headers").toJS();
+      const headers = parsedFile.get("headers")?.toJS();
       const header = headers[0];
       expect(header.planningItems.length).toEqual(3);
     });
 
-    describe("Parse various timestamps", () => {
-      testTimestampText("<2021-05-16>", {
-        isActive: true,
-        year: "2021",
-        month: "05",
-        day: "16",
+    describe("timestampFromRegexMatch", () => {
+      const testRunner =
+        (fcGen: fc.GeneratorValue) =>
+        (timestampArgs: Record<string, boolean>) => {
+          const [expectedTimestampPartObject, _, testText] =
+            fcGenOrgTimestampPartRecord(timestampArgs, fcGen);
+          const [{ firstTimestamp }] = parseRawText(testText).toJS();
+          expect(firstTimestamp).toStrictEqual(
+            expectedTimestampPartObject.toJS(),
+          );
+        };
+
+      test.prop([fc.gen()])("runner", (fcGen) => {
+        forEach(testRunner(fcGen))(RENDERASTEXTESTCASES);
       });
-      testTimestampText("[2021-05-16]", {
-        isActive: false,
-        year: "2021",
-        month: "05",
-        day: "16",
-      });
-      testTimestampText("<2021-05-16 Sun>", {
-        isActive: true,
-        year: "2021",
-        month: "05",
-        day: "16",
-        dayName: "Sun",
-      });
-      testTimestampText("<2021-05-16 Sun 12:45>", {
-        isActive: true,
-        year: "2021",
-        month: "05",
-        day: "16",
-        dayName: "Sun",
-        startHour: "12",
-        startMinute: "45",
-      });
-      testTimestampText("<2021-05-16 Sun 12:45-13:15>", {
-        isActive: true,
-        year: "2021",
-        month: "05",
-        day: "16",
-        dayName: "Sun",
-        startHour: "12",
-        startMinute: "45",
-        endHour: "13",
-        endMinute: "15",
-      });
-      testTimestampText("<2021-05-16 Sun +1w>", {
-        isActive: true,
-        year: "2021",
-        month: "05",
-        day: "16",
-        dayName: "Sun",
-        repeaterType: "+",
-        repeaterValue: "1",
-        repeaterUnit: "w",
-      });
-      testTimestampText("<2021-05-16 Sun .+1w>", {
-        isActive: true,
-        year: "2021",
-        month: "05",
-        day: "16",
-        dayName: "Sun",
-        repeaterType: ".+",
-        repeaterValue: "1",
-        repeaterUnit: "w",
-      });
-      testTimestampText("<2021-05-16 Sun .+2d/4d>", {
-        isActive: true,
-        year: "2021",
-        month: "05",
-        day: "16",
-        dayName: "Sun",
-        repeaterType: ".+",
-        repeaterValue: "2",
-        repeaterUnit: "d",
-        repeaterDeadlineValue: "4",
-        repeaterDeadlineUnit: "d",
-      });
-      testTimestampText("<2021-05-16 Sun .+1w -2d>", {
-        isActive: true,
-        year: "2021",
-        month: "05",
-        day: "16",
-        dayName: "Sun",
-        repeaterType: ".+",
-        repeaterValue: "1",
-        repeaterUnit: "w",
-        delayType: "-",
-        delayValue: "2",
-        delayUnit: "d",
-      });
-      testTimestampText("<2021-05-16 Sun -2d .+1w>", {
-        isActive: true,
-        year: "2021",
-        month: "05",
-        day: "16",
-        dayName: "Sun",
-        repeaterType: ".+",
-        repeaterValue: "1",
-        repeaterUnit: "w",
-        delayType: "-",
-        delayValue: "2",
-        delayUnit: "d",
-      });
-      testTimestampText(
-        "<2021-05-16>--<2021-05-23>",
-        { isActive: true, year: "2021", month: "05", day: "16" },
-        { isActive: true, year: "2021", month: "05", day: "23" },
-      );
     });
+
+    // describe("Parse clock strings", () => {
+    //   leave until we can generate clock strings
+    //   testTimestampText(
+    //     "<2021-05-16>--<2021-05-23>",
+    //     { isActive: true, year: "2021", month: "05", day: "16" },
+    //     { isActive: true, year: "2021", month: "05", day: "23" },
+    //   );
+    // });
   });
 
   ["#+TODO", "#+TYP_TODO"].forEach((t) => {

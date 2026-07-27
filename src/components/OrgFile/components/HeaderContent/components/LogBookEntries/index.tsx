@@ -4,7 +4,7 @@ import "./stylesheet.css";
 
 import {
   renderAsText,
-  timestampDuration,
+  timestampDurationForClockString,
 } from "../../../../../../lib/timestamps";
 
 export default ({ logBookEntries, onTimestampClick, shouldDisableActions }) => {
@@ -56,7 +56,7 @@ export default ({ logBookEntries, onTimestampClick, shouldDisableActions }) => {
                     </span>
                     <span className="logbook-entries__item-duration">
                       {"=>"}{" "}
-                      {timestampDuration(entry.get("start"), entry.get("end"))}
+                      {timestampDurationForClockString(entry.get("start"), entry.get("end"))}
                     </span>
                   </Fragment>
                 )}

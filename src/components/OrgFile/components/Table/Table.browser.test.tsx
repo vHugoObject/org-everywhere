@@ -19,14 +19,12 @@ import {
   setSelectedTableId,
   enterEditMode,
 } from "../../../../actions/org";
-import { getCurrentTimestampAsText } from "../../../../lib/timestamps";
+import { getCurrentJSDateAsOrgTimestampString } from "../../../../lib/timestamps";
 import {
   STATIC_FILE_PREFIX,
   getSelectedTable,
 } from "../../../../lib/org_utils";
 import Table from "./index";
-
-
 
 const capture = Map({ captureTemplates: [] });
 const testBaseState = {
@@ -214,13 +212,13 @@ describe("Table tests", () => {
     fireEvent.click(
       document.querySelector(".table-cell__insert-timestamp-button"),
     );
-    const expectedTimestamp = getCurrentTimestampAsText();
+    const expectedTimestamp = getCurrentJSDateAsOrgTimestampString();
 
     fireEvent.click(getByText(testTextOfThirdCell));
 
     // timestamp will be placed in a seperate AttributedString Element
     expect(getByText(expectedTimestamp)).toBeTruthy();
-    console.log(testTextOfSecondCell)
+    console.log(testTextOfSecondCell);
     expect(getByText(testTextOfSecondCell)).toBeTruthy();
 
     expect(getByText(testTextOfFirstCell)).toBeTruthy();

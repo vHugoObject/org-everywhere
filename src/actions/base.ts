@@ -9,6 +9,7 @@ import type {
   FinderTab,
 } from "../types";
 import { parseFile, resetFileDisplay, setPath } from "./org";
+import { Set } from "immutable";
 
 export const setLoadingMessage = (
   loadingMessage: string | null,
