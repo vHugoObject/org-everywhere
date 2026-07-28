@@ -21,7 +21,7 @@ export const createColorObject = pipe([
   Array.of,
   zipObject(["r", "g", "b", "alpha"]),
 ]);
-export const convertRGBAIntoCSS = pipe([
+export const convertColorObjectIntoCSS = pipe([
   createColorInstance,
   convertColorInstanceIntoCSS,
 ]);
@@ -51,7 +51,7 @@ export const interpolateColors = (
 
 export const interpolateColorsAndReturnCSS = pipe([
   interpolateColors,
-  convertRGBAIntoCSS,
+  convertColorObjectIntoCSS,
 ]);
 
 export const readRgbaVariable = (varName: string): ColorObject => {

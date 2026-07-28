@@ -3,13 +3,13 @@ import { describe, expect, assert } from "vitest";
 import { over } from "lodash/fp";
 import type { ColorObject } from "color";
 import {
-  fcRandomRGBA,
-  fcRandomFloatBetweenZeroAndOne,
-  fcTwoRandomRGBAs,
+  fcRandomColorObject,
+  fcRandomFloatBetweenZeroAndOneExclusive,
+  fcTwoRandomColorObjects,
 } from "../../../test_helpers/TestDataGenerators";
 import {
   createColorObject,
-  convertRGBAIntoCSS,
+  convertColorObjectIntoCSS,
   interpolateColors,
   interpolateColorsAndReturnCSS,
 } from "../color";
@@ -21,7 +21,7 @@ describe("color unit tests", () => {
       g: testG,
       b: testB,
       alpha: testAlpha,
-    } = fcRandomRGBA(fcGen);
+    } = fcRandomColorObject(fcGen);
     const actualColorObject = createColorObject(testR, testG, testB, testAlpha);
 
     expect(actualColorObject).toEqual({
@@ -32,14 +32,14 @@ describe("color unit tests", () => {
     });
   });
 
-  test.prop([fc.gen()])("convertRGBAIntoCSS", (fcGen) => {
+  test.prop([fc.gen()])("convertColorObjectIntoCSS", (fcGen) => {
     const {
       r: testR,
       g: testG,
       b: testB,
       alpha: testAlpha,
-    } = fcRandomRGBA(fcGen);
-    const actualCSS = convertRGBAIntoCSS([testR, testG, testB, testAlpha]);
+    } = fcRandomColorObject(fcGen);
+    const actualCSS = convertColorObjectIntoCSS([testR, testG, testB, testAlpha]);
 
     expect(actualCSS.startsWith("rgba")).toBeTruthy();
   });
@@ -47,7 +47,7 @@ describe("color unit tests", () => {
   test.prop([fc.gen()])("interpolateColors", (fcGen) => {
     const [[testColorA, testColorB], testInterpolationFactor] = over<
       Array<ColorObject> | number
-    >([fcTwoRandomRGBAs, fcRandomFloatBetweenZeroAndOne])(fcGen) as [
+    >([fcTwoRandomColorObjects, fcRandomFloatBetweenZeroAndOneExclusive])(fcGen) as [
       [ColorObject, ColorObject],
       number,
     ];
@@ -68,7 +68,7 @@ describe("color unit tests", () => {
   test.prop([fc.gen()])("interpolateColorsAndReturnCSS", (fcGen) => {
     const [[testColorA, testColorB], testInterpolationFactor] = over<
       Array<ColorObject> | number
-    >([fcTwoRandomRGBAs, fcRandomFloatBetweenZeroAndOne])(fcGen) as [
+    >([fcTwoRandomColorObjects, fcRandomFloatBetweenZeroAndOneExclusive])(fcGen) as [
       [ColorObject, ColorObject],
       number,
     ];

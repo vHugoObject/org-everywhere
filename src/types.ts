@@ -2,18 +2,8 @@ import { List, Set } from "immutable";
 import type { MapOf } from "immutable";
 import type { ActionTypes } from "redux-undo";
 
-export interface RGB {
-  r: number;
-  g: number;
-  b: number;
-}
 
-export interface RGBA {
-  r: number;
-  g: number;
-  b: number;
-  alpha: number;
-}
+
 
 export type OrgTimestampPart = {
   isActive: boolean;

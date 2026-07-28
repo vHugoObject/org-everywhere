@@ -39,7 +39,7 @@ import {
   fcShuffledSubarray,
   fcShuffledArray,
   fcNLengthUniqueStringArrayGenerator,
-  fcRandomRGBA,
+  fcRandomColorObject,
   fcRandomObjectKeyValuePair,
   fcGenTimeRangeParts,
   fcGenOrgTimestampPartRecord,
@@ -51,7 +51,6 @@ import {
   fcGenRandomOrgTimestampPartRecordWithRepeater,
   fcGenValidJSDateObjectRange,
   fcGenValidJSDateObjectInRange,
-  fcRandomItemFromArray,
 } from "../TestDataGenerators.ts";
 
 const isRepeaterType = (
@@ -276,13 +275,13 @@ describe("TestDataGenerators suite", () => {
   });
 
   describe("Color generators suite", () => {
-    test.prop([fc.gen()])("fcRandomRGBA", (fcGen) => {
+    test.prop([fc.gen()])("fcRandomColorObject", (fcGen) => {
       const {
         r: actualR,
         g: actualG,
         b: actualB,
         alpha: actualAlpha,
-      } = fcRandomRGBA(fcGen);
+      } = fcRandomColorObject(fcGen);
       assertArrayOfIntegersInRangeInclusive(
         [0, 255],
         [actualR, actualG, actualB],

@@ -30,8 +30,8 @@ import {
   type Duration,
 } from "date-fns/fp";
 import { type MapOf, Map } from "immutable";
+import type { ColorObject } from "color";
 import type {
-  RGBA,
   OrgTimestampPart,
   RepeaterUnit,
   TimestampUnit,
@@ -647,7 +647,7 @@ export const fcRandomInBufferSetting = partialRight(fcShuffledSubarray, [
   TESTINBUFFERSETTINGS,
 ]);
 
-export const fcRandomRGBArray = (
+export const fcRandomColorObjectArray = (
   fcGen: fc.GeneratorValue,
 ): [number, number, number] => {
   return unfold(
@@ -656,8 +656,8 @@ export const fcRandomRGBArray = (
   );
 };
 
-export const fcRandomRGBA = (fcGen: fc.GeneratorValue): RGBA => {
-  const [r, g, b] = fcRandomRGBArray(fcGen);
+export const fcRandomColorObject = (fcGen: fc.GeneratorValue): ColorObject => {
+  const [r, g, b] = fcRandomColorObjectArray(fcGen);
   const alpha = fcRandomFloatBetweenZeroAndOneExclusive(fcGen);
   return {
     r,
@@ -667,13 +667,13 @@ export const fcRandomRGBA = (fcGen: fc.GeneratorValue): RGBA => {
   };
 };
 
-export const fcNLengthArrayOfRandomRGBAs = curry(
-  (count: number, fcGen: fc.GeneratorValue): Array<RGBA> => {
-    return unfold((_: number): RGBA => fcRandomRGBA(fcGen), count);
+export const fcNLengthArrayOfRandomColorObjects = curry(
+  (count: number, fcGen: fc.GeneratorValue): Array<ColorObject> => {
+    return unfold((_: number): ColorObject => fcRandomColorObject(fcGen), count);
   },
 );
 
-export const fcTwoRandomRGBAs = fcNLengthArrayOfRandomRGBAs(2);
+export const fcTwoRandomColorObjects = fcNLengthArrayOfRandomColorObjects(2);
 
 // Dates
 
