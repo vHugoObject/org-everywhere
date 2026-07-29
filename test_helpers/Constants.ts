@@ -5,6 +5,10 @@ import {
   some as optionSome,
 } from "fp-ts/Option";
 import { unfold } from "../src/util/transformers";
+import { Map, Set as ImmutableSet, fromJS, List } from "immutable";
+
+const TESTSTATICFILEPREFIX: string = "org-everywhere_internal_";
+export const TESTFILEPATH: string = TESTSTATICFILEPREFIX + "fixtureTestFile.org";
 
 export const TESTMAXSTARCOUNT: number = 15;
 export const TESTUPPERALPHACHARACTERRANGE: [number, number] = [65, 90];
@@ -780,3 +784,36 @@ export const TIMESTAMPSWITHREPEATERTESTCASES = [
   { repeaterType: ".+", withStartTime: true, withDeadline: false },
   { repeaterType: ".+", withStartTime: false, withDeadline: false },
 ];
+
+
+export const TESTBASESTATE = {
+  org: {
+    past: [],
+    present: Map({
+      files: Map(),
+      fileSettings: [],
+      search: Map({
+        searchFilter: "",
+        searchFilterExpr: [],
+      }),
+      bookmarks: Map({
+        search: List(),
+        "task-list": List(),
+        refile: List(),
+      }),
+    }),
+    future: [],
+  },
+  syncBackend: Map({
+    isAuthenticated: true,
+  }),
+  capture: Map({ captureTemplates: [] }),
+  base: fromJS({
+    customKeybindings: {},
+    shouldTapTodoToAdvance: true,
+    isLoading: ImmutableSet(),
+    finderTab: "Search",
+    agendaTimeframe: "Week",
+    preferEditRawValues: false,
+  }),
+};

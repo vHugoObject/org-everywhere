@@ -37,11 +37,11 @@
     "path-parse": "^1.0.7",
     "pegjs": "^0.10.0",
     "process": "^0.11.10",
-    "react": "17.0.0",
+    "react": "18.0.0",
     "react-beautiful-dnd": "^13.0.0",
     "react-bootstrap": "^2.10.10",
     "react-collapse": "^4.0.3",
-    "react-dom": "^16.14.0",
+    "react-dom": "^18.0.0",
     "react-feather": "^2.0.10",
     "react-hotkeys": "^2.0.0",
     "react-icons": "^5.5.0",
@@ -76,6 +76,7 @@
     "@types/react-router-dom": "^5.3.3",
     "@types/web": "^0.0.347",
     "@vitejs/plugin-react": "^4.5.1",
+    "@vitest/browser-playwright": "^4.1.10",
     "@vitest/expect": "^3.2.4",
     "eslint": "^9.28.0",
     "eslint-plugin-react-hooks": "^5.2.0",
@@ -90,6 +91,7 @@
     "vite-css-modules": "^1.15.0",
     "vite-plugin-mkcert": "^2.1.0",
     "vite-plugin-node-polyfills": "^0.24.0",
-    "vitest": "^3.2.2"
+    "vitest": "^4.1.10",
+    "vitest-browser-react": "^2.2.0"
   }
 }

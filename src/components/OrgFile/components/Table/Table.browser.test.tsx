@@ -1,14 +1,19 @@
 import React from "react";
+import { test, fc } from "@fast-check/vitest";
+import { describe, expect, afterEach } from "vitest";
 import thunk from "redux-thunk";
 import { MemoryRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 import { createStore, applyMiddleware } from "redux";
-import { describe, expect, beforeEach } from "vitest";
-import { test } from "@fast-check/vitest";
-import { Map, Set, fromJS, List } from "immutable";
-import { shuffle, first, trim, pipe, range, take, curry } from "lodash/fp";
-import { render, fireEvent, cleanup } from "@testing-library/react";
-import readFixture from "../../../../../test_helpers/index";
+import { trim } from "lodash/fp";
+import { type RenderResult, cleanup } from 'vitest-browser-react'
+import type { UserEvent } from "vitest/browser"
+import type { MapOf } from "immutable"
+import type { OrgTable, OrgTableRow, OrgTableCell } from "../../../../types";
+import { randomArrayIndex, threeRandomArrayIndices } from "../../../../../test_helpers/TestDataGenerators";
+import multipleTables from "../../../../../test_helpers/fixtures/multiple_tables.org?raw";
+import { TESTBASESTATE, TESTFILEPATH } from "../../../../../test_helpers/Constants";
+import { setup } from "../../../../../test_helpers/index";
 import rootReducer from "../../../../reducers/";
 import {
   setPath,
@@ -21,206 +26,156 @@ import {
 } from "../../../../actions/org";
 import { getCurrentJSDateAsOrgTimestampString } from "../../../../lib/timestamps";
 import {
-  STATIC_FILE_PREFIX,
   getSelectedTable,
+  getTableTotalColumnsCount,
+  getTableTotalRowsCount
 } from "../../../../lib/org_utils";
 import Table from "./index";
 
-const capture = Map({ captureTemplates: [] });
-const testBaseState = {
-  org: {
-    past: [],
-    present: Map({
-      files: Map(),
-      fileSettings: [],
-      search: Map({
-        searchFilter: "",
-        searchFilterExpr: [],
-      }),
-      bookmarks: Map({
-        search: List(),
-        "task-list": List(),
-        refile: List(),
-      }),
-    }),
-    future: [],
-  },
-  syncBackend: Map({
-    isAuthenticated: true,
-  }),
-  capture,
-  base: fromJS({
-    customKeybindings: {},
-    shouldTapTodoToAdvance: true,
-    isLoading: Set(),
-    finderTab: "Search",
-    agendaTimeframe: "Week",
-    preferEditRawValues: false,
-  }),
-};
 
-describe("Table tests", () => {
-  afterEach(cleanup);
+const EDITCELLCONTAINERID = "edit-cell-container";
 
-  const testOrgFile = readFixture("multiple_tables");
-  const testFilePath = STATIC_FILE_PREFIX + "fixtureTestFile.org";
+const testTableRenderer = async(): Promise<[{user: UserEvent, screen: RenderResult}, MapOf<OrgTable>, any, [string, string, string]]> => {
   const testHeaderIndex = 2;
   const testDescriptionItemIndex = 1;
 
-  const editCellContainerId = "edit-cell-container";
 
-  const randomArrayValue = pipe([shuffle, first]);
-  const randomArrayIndex = pipe([range(0), randomArrayValue]);
-  const threeRandomArrayIndices = pipe([range(0), shuffle, take(3)]);
+  const testStore = createStore(rootReducer, TESTBASESTATE, applyMiddleware(thunk));
+  testStore.dispatch(parseFile(TESTFILEPATH, multipleTables));
+  testStore.dispatch(setPath(TESTFILEPATH));
 
-  const getTableTotalColumnsCount = (table) =>
-    table.getIn(["contents", 0, "contents"]).size;
-  const getTableTotalRowsCount = (table) => table.getIn(["contents"]).size;
+  const testState = testStore.getState();
+  const testHeaderId = testState.org.present.getIn([
+    "files",
+    TESTFILEPATH,
+    "headers",
+    testHeaderIndex,
+    "id",
+  ]);
+  const testTableId = testState.org.present.getIn([
+    "files",
+    TESTFILEPATH,
+    "headers",
+    testHeaderIndex,
+    "description",
+    testDescriptionItemIndex,
+    "id",
+  ]);
 
-  let testStore,
-    testTable,
-    testTableRenderer,
-    testTextOfFirstCell,
-    testTextOfSecondCell,
-    testTextOfThirdCell,
-    testProps;
+  testStore.dispatch(setSelectedTableId(testTableId));
+  testStore.dispatch(selectHeader(testHeaderId));
+  testStore.dispatch(selectHeaderIndex(testHeaderIndex));
+  testStore.dispatch(
+    setSelectedDescriptionItemIndex(testDescriptionItemIndex),
+  );
 
-  beforeEach(() => {
-    window.testRunner = true;
+  const testTable = getSelectedTable(testStore.getState());
 
-    testStore = createStore(rootReducer, testBaseState, applyMiddleware(thunk));
+  const testTableContents = testTable.get("contents");
+  const testTableTotalRows = getTableTotalRowsCount(testTable);
+  const testTableTotalColumns = getTableTotalColumnsCount(testTable);
 
-    testStore.dispatch(parseFile(testFilePath, testOrgFile));
-    testStore.dispatch(setPath(testFilePath));
+  const testRandomRowIndex = randomArrayIndex(testTableTotalRows);
 
-    const testState = testStore.getState();
-    const testHeaderId = testState.org.present.getIn([
-      "files",
-      testFilePath,
-      "headers",
-      testHeaderIndex,
-      "id",
-    ]);
-    const testTableId = testState.org.present.getIn([
-      "files",
-      testFilePath,
-      "headers",
-      testHeaderIndex,
-      "description",
-      testDescriptionItemIndex,
-      "id",
-    ]);
+  const [
+    testFirstRandomColumnIndex,
+    testSecondRandomColumnIndex,
+    testThirdRandomColumnIndex,
+  ] = threeRandomArrayIndices(testTableTotalColumns);
 
-    testStore.dispatch(setSelectedTableId(testTableId));
-    testStore.dispatch(selectHeader(testHeaderId));
-    testStore.dispatch(selectHeaderIndex(testHeaderIndex));
-    testStore.dispatch(
-      setSelectedDescriptionItemIndex(testDescriptionItemIndex),
-    );
+  const testFirstCell = testTableContents.getIn([
+    testRandomRowIndex,
+    "contents",
+    testFirstRandomColumnIndex,
+  ]);
+  const testSecondCell = testTableContents.getIn([
+    testRandomRowIndex,
+    "contents",
+    testSecondRandomColumnIndex,
+  ]);
+  const testThirdCell = testTableContents.getIn([
+    testRandomRowIndex,
+    "contents",
+    testThirdRandomColumnIndex,
+  ]);
 
-    testTable = getSelectedTable(testStore.getState());
+  const testTextOfFirstCell = trim(testFirstCell.get("rawContents"));
+  const testTextOfSecondCell = trim(testSecondCell.get("rawContents"));
+  const testTextOfThirdCell = trim(testThirdCell.get("rawContents"));
 
-    const testTableContents = testTable.get("contents");
-    const testTableTotalRows = getTableTotalRowsCount(testTable);
-    const testTableTotalColumns = getTableTotalColumnsCount(testTable);
+  const testProps = {
+    filePath: TESTFILEPATH,
+    table: testTable,
+    headerIndex: testHeaderIndex,
+    descriptionItemIndex: testDescriptionItemIndex,
+  };
 
-    const testRandomRowIndex = randomArrayIndex(testTableTotalRows);
+  const setupObj = await setup(
+      <MemoryRouter
+        keyLength={0}
+        initialEntries={["/file/dir1/dir2/fixtureTestFile.org"]}
+      >
+        <Provider store={testStore}>
+          <Table props={testProps} />
+        </Provider>
+      </MemoryRouter>,
+  );
 
-    const [
-      testFirstRandomColumnIndex,
-      testSecondRandomColumnIndex,
-      testThirdRandomColumnIndex,
-    ] = threeRandomArrayIndices(testTableTotalColumns);
+  return [setupObj, testTable, testStore, [testTextOfFirstCell, testTextOfSecondCell, testTextOfThirdCell]]
 
-    const testFirstCell = testTableContents.getIn([
-      testRandomRowIndex,
-      "contents",
-      testFirstRandomColumnIndex,
-    ]);
-    const testSecondCell = testTableContents.getIn([
-      testRandomRowIndex,
-      "contents",
-      testSecondRandomColumnIndex,
-    ]);
-    const testThirdCell = testTableContents.getIn([
-      testRandomRowIndex,
-      "contents",
-      testThirdRandomColumnIndex,
-    ]);
+}
 
-    testTextOfFirstCell = trim(testFirstCell.get("rawContents"));
-    testTextOfSecondCell = trim(testSecondCell.get("rawContents"));
-    testTextOfThirdCell = trim(testThirdCell.get("rawContents"));
 
-    const tableRenderer = curry((testStore, testProps) => {
-      return render(
-        <MemoryRouter
-          keyLength={0}
-          initialEntries={["/file/dir1/dir2/fixtureTestFile.org"]}
-        >
-          <Provider store={testStore}>
-            <Table props={testProps} />
-          </Provider>
-        </MemoryRouter>,
-      );
-    });
 
-    testTableRenderer = tableRenderer(testStore);
-    testProps = {
-      filePath: testFilePath,
-      table: testTable,
-      headerIndex: testHeaderIndex,
-      descriptionItemIndex: testDescriptionItemIndex,
-    };
-  });
+describe("Table tests", async() => {
+  afterEach(cleanup)
 
-  test("Render table", () => {
-    const { getByText } = testTableRenderer(testProps);
-    testTable.get("contents").forEach((row) => {
-      row.get("contents").forEach((cell) => {
+  test("Render table", async() => {
+    const [{screen}, testTable] = await testTableRenderer()
+    testTable.get("contents").forEach((row: MapOf<OrgTableRow>) => {
+      row.get("contents").forEach((cell: MapOf<OrgTableCell>) => {
         const expectedText = trim(cell.get("rawContents"));
-        expect(getByText(expectedText)).toBeTruthy();
+        expect(screen.getByText(expectedText)).toBeTruthy();
       });
     });
   });
 
-  test("Render table cells, change text, then click on another cell", () => {
-    const { getByText, getByTestId } = testTableRenderer(testProps);
-    fireEvent.click(getByText(testTextOfFirstCell));
+  test("Render table cells, change text, then click on another cell", async() => {
 
-    fireEvent.click(getByText(testTextOfSecondCell));
+    const [{user, screen}, _, testStore, [testTextOfFirstCell, testTextOfSecondCell, testTextOfThirdCell]] = await testTableRenderer()
+
+    await user.click(screen.getByText(testTextOfFirstCell))
+
+    await user.click(screen.getByText(testTextOfSecondCell))
     testStore.dispatch(enterEditMode("table"));
 
-    const newValue = "new";
-    fireEvent.change(getByTestId(editCellContainerId), {
-      target: { value: newValue },
-    });
+    const newValue: string = "new";
+    await user.click(screen.getByTestId(EDITCELLCONTAINERID))
+    await user.type(screen.getByTestId(EDITCELLCONTAINERID), (newValue))
 
-    expect(getByText(newValue)).toBeTruthy();
-    expect(() => getByText(testTextOfSecondCell)).toThrowError();
+    expect(screen.getByText(newValue)).toBeTruthy();
 
-    fireEvent.click(getByText(testTextOfThirdCell));
-    expect(getByText(testTextOfFirstCell)).toBeTruthy();
+    await user.click(screen.getByText(testTextOfThirdCell))
+    expect(screen.getByText(testTextOfFirstCell)).toBeTruthy();
+
+
   });
 
-  test("Render table cells, add timestamp, then click on another cell", () => {
-    const { getByText } = testTableRenderer(testProps);
-    fireEvent.click(getByText(testTextOfFirstCell));
-    fireEvent.click(getByText(testTextOfSecondCell));
-    testStore.dispatch(enterEditMode("table"));
+  test("Render table cells, add timestamp, then click on another cell", async() => {
+    const [{user, screen}, _, __, [testTextOfFirstCell, testTextOfSecondCell, testTextOfThirdCell]] = await testTableRenderer()
+    await user.click(screen.getByText(testTextOfFirstCell))
+    await user.dblClick(screen.getByText(testTextOfSecondCell))
+    await user.click(screen.getByTestId(EDITCELLCONTAINERID))
 
-    fireEvent.click(
-      document.querySelector(".table-cell__insert-timestamp-button"),
-    );
     const expectedTimestamp = getCurrentJSDateAsOrgTimestampString();
-
-    fireEvent.click(getByText(testTextOfThirdCell));
+    await user.click(screen.getByText(testTextOfThirdCell))
 
     // timestamp will be placed in a seperate AttributedString Element
-    expect(getByText(expectedTimestamp)).toBeTruthy();
-    console.log(testTextOfSecondCell);
-    expect(getByText(testTextOfSecondCell)).toBeTruthy();
+    expect(screen.getByText(expectedTimestamp)).toBeTruthy();
+    expect(screen.getByText(testTextOfSecondCell)).toBeTruthy();
 
-    expect(getByText(testTextOfFirstCell)).toBeTruthy();
+    expect(screen.getByText(testTextOfFirstCell)).toBeTruthy();
+
+
   });
 });

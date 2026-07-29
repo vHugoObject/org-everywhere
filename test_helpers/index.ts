@@ -1,15 +1,12 @@
-/* global __dirname */
-
-import fs from "fs";
-import path from "path";
-import userEvent from "@testing-library/user-event";
-import { render } from "@testing-library/react";
+import { render, type RenderResult } from 'vitest-browser-react'
+import { type UserEvent, userEvent } from "vitest/browser"
 import { BrowserRouter } from "react-router-dom";
 
-export const setup = (jsx: React.JSX.Element) => {
+export const setup = async(jsx: React.JSX.Element): Promise<{user: UserEvent, screen: RenderResult}> => {
+  const screen = await render(jsx)
   return {
     user: userEvent.setup(),
-    ...render(jsx),
+    screen,
   };
 };
 
@@ -22,8 +19,5 @@ export const renderWithRouter = (ui: React.ReactNode, { route = "/" } = {}) => {
   };
 };
 
-export default function readFixture(name: string) {
-  return fs
-    .readFileSync(path.join(__dirname, `./fixtures/${name}.org`))
-    .toString();
-}
+export const sleep = async (ms: number): Promise<void> =>
+  await new Promise((resolve) => setTimeout(resolve, ms))

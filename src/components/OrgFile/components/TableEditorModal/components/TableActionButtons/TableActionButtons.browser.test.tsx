@@ -1,15 +1,25 @@
 import React from "react";
 import thunk from "redux-thunk";
-import { describe, expect, beforeEach } from "vitest";
+import { describe, expect, afterEach } from "vitest";
 import { test } from "@fast-check/vitest";
-import { Map, Set, fromJS, List } from "immutable";
-import { shuffle, first, pipe, range, curry, add } from "lodash/fp";
-import { render, fireEvent, cleanup } from "@testing-library/react";
+import { add } from "lodash/fp";
 import { MemoryRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 import { createStore, applyMiddleware } from "redux";
-
-import readFixture from "../../../../../../../test_helpers/index";
+import { type RenderResult, cleanup } from 'vitest-browser-react'
+import type { UserEvent } from "vitest/browser"
+import { type MapOf, List } from "immutable"
+import { clampAddFromZero, clampSubtractFromZero } from "../../../../../../util/transformers";
+import type { OrgTable, OrgTableRow, OrgTableCell } from "../../../../../../types";
+import {
+  randomArrayIndex,
+} from "../../../../../../../test_helpers/TestDataGenerators";
+import multipleTables from "../../../../../../../test_helpers/fixtures/multiple_tables.org?raw";
+import {
+  TESTBASESTATE,
+  TESTFILEPATH
+} from "../../../../../../../test_helpers/Constants";
+import { setup } from "../../../../../../../test_helpers/index";
 import HeaderBar from "../../../../../HeaderBar";
 import rootReducer from "../../../../../../reducers/";
 import {
@@ -22,296 +32,226 @@ import {
   setSelectedTableCellId,
 } from "../../../../../../actions/org";
 import {
-  STATIC_FILE_PREFIX,
   getSelectedTable,
+  getTableTotalColumnsCount,
+  getContentsOfTableColumn,
+  getContentsOfTableRow,
+  getTableTotalRowsCount
 } from "../../../../../../lib/org_utils";
 import TableActionButtons from "./index";
 
-const capture = Map({ captureTemplates: [] });
-const testBaseState = {
-  org: {
-    past: [],
-    present: Map({
-      files: Map(),
-      fileSettings: [],
-      search: Map({
-        searchFilter: "",
-        searchFilterExpr: [],
-      }),
-      bookmarks: Map({
-        search: List(),
-        "task-list": List(),
-        refile: List(),
-      }),
-    }),
-    future: [],
-  },
-  syncBackend: Map({
-    isAuthenticated: true,
-  }),
-  capture,
-  base: fromJS({
-    customKeybindings: {},
-    shouldTapTodoToAdvance: true,
-    isLoading: Set(),
-    finderTab: "Search",
-    agendaTimeframe: "Week",
-    preferEditRawValues: false,
-  }),
-};
-
-describe("TableCell tests", () => {
-  afterEach(cleanup);
-
-  const testOrgFile = readFixture("multiple_tables");
-  const testFilePath = STATIC_FILE_PREFIX + "fixtureTestFile.org";
+const addOne = add(1);
+const minusOne = add(-1);
+const testTableActionsRenderer = async(): Promise<[{user: UserEvent, screen: RenderResult}, any, [number, number], [number, number]]> => {
   const testHeaderIndex = 5;
   const testDescriptionItemIndex = 2;
 
-  const addOne = add(1);
-  const minusOne = add(-1);
-  const randomArrayValue = pipe([shuffle, first]);
-  const randomArrayIndex = pipe([range(0), randomArrayValue]);
-  const randomArrayIndexFromOne = pipe([range(1), randomArrayValue]);
-  const randomArrayIndexMinusLastIndex = pipe([
-    minusOne,
-    range(0),
-    randomArrayValue,
+
+  const testStore = createStore(rootReducer, TESTBASESTATE, applyMiddleware(thunk));
+
+  testStore.dispatch(parseFile(TESTFILEPATH, multipleTables));
+  testStore.dispatch(setPath(TESTFILEPATH));
+
+  const testState = testStore.getState();
+  const testHeaderId = testState.org.present.getIn([
+    "files",
+    TESTFILEPATH,
+    "headers",
+    testHeaderIndex,
+    "id",
   ]);
 
-  const getTableTotalColumnsCount = (table) =>
-    table.getIn(["contents", 0, "contents"]).size;
-  const getTableTotalRowsCount = (table) => table.getIn(["contents"]).size;
+  const testTableId = testState.org.present.getIn([
+    "files",
+    TESTFILEPATH,
+    "headers",
+    testHeaderIndex,
+    "description",
+    testDescriptionItemIndex,
+    "id",
+  ]);
 
-  const getContentOfTableColumn = curry((columnIndex, table) => {
-    return table.get("contents").map((row) => {
-      return row.getIn(["contents", columnIndex]);
-    });
-  });
+  testStore.dispatch(setSelectedTableId(testTableId));
+  testStore.dispatch(selectHeader(testHeaderId));
+  testStore.dispatch(selectHeaderIndex(testHeaderIndex));
+  testStore.dispatch(
+    setSelectedDescriptionItemIndex(testDescriptionItemIndex),
+  );
 
-  const getContentOfTableRow = curry((rowIndex, table) => {
-    return table.getIn(["contents", rowIndex]);
-  });
+  const testTable = getSelectedTable(testStore.getState());
 
-  let testStore,
-    testTableActionsRenderer,
+  const testTableContents = testTable.get("contents");
+  const testTableTotalRows = getTableTotalRowsCount(testTable);
+  const testTableTotalColumns = getTableTotalColumnsCount(testTable);
+
+  const testRandomRowIndex = randomArrayIndex(testTableTotalRows);
+
+  const testRandomColumnIndex = randomArrayIndex(testTableTotalColumns);
+  const testCell = testTableContents.getIn([
     testRandomRowIndex,
+    "contents",
     testRandomColumnIndex,
-    testTable,
-    testTableContents,
-    testTableTotalRows,
-    testTableTotalColumns,
-    testCell;
+  ]);
 
-  beforeEach(() => {
-    window.testRunner = true;
+  testStore.dispatch(setSelectedTableCellId(testCell.get("id")));
 
-    testStore = createStore(rootReducer, testBaseState, applyMiddleware(thunk));
+  const testSetupObj = await setup(
+    <MemoryRouter
+      keyLength={0}
+      initialEntries={["/file/dir1/dir2/fixtureTestFile.org"]}
+    >
+      <Provider store={testStore}>
+        <HeaderBar />
+        <TableActionButtons filePath={TESTFILEPATH} />
+      </Provider>
+    </MemoryRouter>,
+  );
 
-    testStore.dispatch(parseFile(testFilePath, testOrgFile));
-    testStore.dispatch(setPath(testFilePath));
-
-    const testState = testStore.getState();
-    const testHeaderId = testState.org.present.getIn([
-      "files",
-      testFilePath,
-      "headers",
-      testHeaderIndex,
-      "id",
-    ]);
-    const testTableId = testState.org.present.getIn([
-      "files",
-      testFilePath,
-      "headers",
-      testHeaderIndex,
-      "description",
-      testDescriptionItemIndex,
-      "id",
-    ]);
-
-    testStore.dispatch(setSelectedTableId(testTableId));
-    testStore.dispatch(selectHeader(testHeaderId));
-    testStore.dispatch(selectHeaderIndex(testHeaderIndex));
-    testStore.dispatch(
-      setSelectedDescriptionItemIndex(testDescriptionItemIndex),
-    );
-
-    testTable = getSelectedTable(testStore.getState());
-
-    testTableContents = testTable.get("contents");
-    testTableTotalRows = getTableTotalRowsCount(testTable);
-    testTableTotalColumns = getTableTotalColumnsCount(testTable);
-
-    testRandomRowIndex = randomArrayIndex(testTableTotalRows);
-
-    testRandomColumnIndex = randomArrayIndex(testTableTotalColumns);
-    testCell = testTableContents.getIn([
+  return [
+    testSetupObj,
+    testStore,
+    [
+      testTableTotalRows,
+      testTableTotalColumns
+    ],
+    [
       testRandomRowIndex,
-      "contents",
-      testRandomColumnIndex,
-    ]);
+      testRandomColumnIndex
+    ],
+  ];
+}
 
-    testStore.dispatch(setSelectedTableCellId(testCell.get("id")));
+describe("TableCell tests", async() => {
+  afterEach(cleanup);
 
-    const tableActionsRenderer = curry((testStore, testFilePath) => {
-      return render(
-        <MemoryRouter
-          keyLength={0}
-          initialEntries={["/file/dir1/dir2/fixtureTestFile.org"]}
-        >
-          <Provider store={testStore}>
-            <HeaderBar />
-            <TableActionButtons filePath={testFilePath} />
-          </Provider>
-        </MemoryRouter>,
-      );
-    });
+  test("Test edit-cell-button", async() => {
+    const [{screen, user}, testStore] = await testTableActionsRenderer();
+    await user.click(screen.getByTestId("edit-cell-button"));
 
-    testTableActionsRenderer = tableActionsRenderer(testStore);
-  });
-
-  test("Test edit-cell-button", () => {
-    const { getByTestId } = testTableActionsRenderer(testFilePath);
-    fireEvent.click(getByTestId("edit-cell-button"));
-    const inTableEditMode =
+    const actualEditModeAfterOneClick =
       testStore
         .getState()
-        .org.present.getIn(["files", testFilePath, "editMode"]) === "table";
-    expect(inTableEditMode).toBeTruthy();
+        .org.present.getIn(["files", TESTFILEPATH, "editMode"])
+
+    expect(actualEditModeAfterOneClick).toBe("table");
+
+    await user.click(screen.getByTestId("edit-cell-button"));
+
+    const actualEditModeAfterTwoClicks =
+      testStore
+        .getState()
+        .org.present.getIn(["files", TESTFILEPATH, "editMode"])
+
+    expect(actualEditModeAfterTwoClicks).toBe(null);
+
   });
 
-  describe("Column Tests", () => {
-    test("Test add-column-button", () => {
-      const { getByTestId } = testTableActionsRenderer(testFilePath);
-      fireEvent.click(getByTestId("add-column-button"));
+  describe("Column Tests", async() => {
+    test("Test add-column-button", async() => {
+      const [{screen, user}, testStore, [,testTableTotalColumns]] = await testTableActionsRenderer();
+      await user.click(screen.getByTestId("add-column-button"));
       const actualTable = getSelectedTable(testStore.getState());
       const actualColumnsCount = getTableTotalColumnsCount(actualTable);
       expect(actualColumnsCount).toEqual(addOne(testTableTotalColumns));
     });
 
-    test("Test delete-column-button", () => {
-      const { getByTestId } = testTableActionsRenderer(testFilePath);
-      fireEvent.click(getByTestId("delete-column-button"));
+    test("Test delete-column-button", async() => {
+      const [{screen, user}, testStore, [,testTableTotalColumns]] = await testTableActionsRenderer();
+      await user.click(screen.getByTestId("delete-column-button"));
       const actualTable = getSelectedTable(testStore.getState());
       const actualColumnsCount = getTableTotalColumnsCount(actualTable);
       expect(actualColumnsCount).toEqual(minusOne(testTableTotalColumns));
     });
   });
 
-  describe("Row Tests", () => {
-    test("Test add-row-button", () => {
-      const { getByTestId } = testTableActionsRenderer(testFilePath);
-      fireEvent.click(getByTestId("add-row-button"));
+  describe("Row Tests", async() => {
+    test("Test add-row-button", async() => {
+      const [{screen, user}, testStore, [testTableTotalRows]] = await testTableActionsRenderer();
+      await user.click(screen.getByTestId("add-row-button"));
       const actualTable = getSelectedTable(testStore.getState());
       const actualRowsCount = getTableTotalRowsCount(actualTable);
       expect(actualRowsCount).toEqual(addOne(testTableTotalRows));
     });
 
-    test("Test delete-row-button", () => {
-      const { getByTestId } = testTableActionsRenderer(testFilePath);
-      fireEvent.click(getByTestId("delete-row-button"));
+    test("Test delete-row-button", async() => {
+      const [{screen, user}, testStore, [testTableTotalRows]] = await testTableActionsRenderer();
+      await user.click(screen.getByTestId("delete-row-button"));
       const actualTable = getSelectedTable(testStore.getState());
       const actualRowsCount = getTableTotalRowsCount(actualTable);
       expect(actualRowsCount).toEqual(minusOne(testTableTotalRows));
     });
   });
+  describe("Movement Tests", async() => {
+    test("Test up-button", async() => {
+      const [{screen, user}, testStore, [testTableTotalRows], [testRandomRowIndex]] = await testTableActionsRenderer();
 
-  describe("Movement Tests", () => {
-    test("Test up-button", () => {
-      const testRowIndex = randomArrayIndexFromOne(testTableTotalRows);
-      const testCellToMoveUp = testTableContents.getIn([
-        testRowIndex,
-        "contents",
-        testRandomColumnIndex,
-      ]);
-      testStore.dispatch(setSelectedTableCellId(testCellToMoveUp.get("id")));
-
-      const actualRowBeforeMove = getContentOfTableRow(testRowIndex, testTable);
-      const expectedRowIndexAfterMove = minusOne(testRowIndex);
-
-      const { getByTestId } = testTableActionsRenderer(testFilePath);
-      fireEvent.click(getByTestId("up-button"));
+      const actualTableBeforeMove: MapOf<OrgTable> = getSelectedTable(testStore.getState());
+      const actualRowBeforeMove: List<MapOf<OrgTableCell>> = getContentsOfTableRow(testRandomRowIndex, actualTableBeforeMove,)
+      const expectedRowIndexAfterMove: number = clampSubtractFromZero(testTableTotalRows, testRandomRowIndex, 1)
+      await user.click(screen.getByTestId("up-button"));
 
       const actualTable = getSelectedTable(testStore.getState());
-      const actualRowAfterMove = getContentOfTableRow(
-        expectedRowIndexAfterMove,
+      const actualRowAfterMove: List<MapOf<OrgTableCell>> = getContentsOfTableRow(
+	expectedRowIndexAfterMove,
         actualTable,
       );
 
       expect(actualRowAfterMove.equals(actualRowBeforeMove)).toBeTruthy();
     });
 
-    test("Test left-button", () => {
-      const testColumnIndex = randomArrayIndexFromOne(testTableTotalColumns);
-      const testCellToMoveLeft = testTableContents.getIn([
-        testRandomRowIndex,
-        "contents",
-        testColumnIndex,
-      ]);
-      testStore.dispatch(setSelectedTableCellId(testCellToMoveLeft.get("id")));
+    test("Test left-button", async() => {
+      const [{screen, user}, testStore, [,testTableTotalColumns], [,testRandomColumnIndex]] = await testTableActionsRenderer();
 
-      const actualColumnBeforeMove = getContentOfTableColumn(
-        testColumnIndex,
-        testTable,
-      );
-      const expectedColumnIndexAfterMove = minusOne(testColumnIndex);
+      const actualTableBeforeMove = getSelectedTable(testStore.getState());
+      const actualColumnBeforeMove = getContentsOfTableColumn(testRandomColumnIndex, actualTableBeforeMove)
 
-      const { getByTestId } = testTableActionsRenderer(testFilePath);
-      fireEvent.click(getByTestId("left-button"));
+      const expectedColumnIndexAfterMove = clampSubtractFromZero(testTableTotalColumns, testRandomColumnIndex, 1)
+
+      await user.click(screen.getByTestId("left-button"));
 
       const actualTable = getSelectedTable(testStore.getState());
-      const actualColumnAfterMove = getContentOfTableColumn(
+      const actualColumnAfterMove = getContentsOfTableColumn(
         expectedColumnIndexAfterMove,
         actualTable,
       );
+
       expect(actualColumnAfterMove.equals(actualColumnBeforeMove)).toBeTruthy();
     });
 
-    test("Test right-button", () => {
-      const testColumnIndex = randomArrayIndexMinusLastIndex(
-        testTableTotalColumns,
-      );
-      const testCellToMoveLeft = testTableContents.getIn([
-        testRandomRowIndex,
-        "contents",
-        testColumnIndex,
-      ]);
-      testStore.dispatch(setSelectedTableCellId(testCellToMoveLeft.get("id")));
+    test("Test right-button", async() => {
 
-      const actualColumnBeforeMove = getContentOfTableColumn(
-        testColumnIndex,
-        testTable,
-      );
-      const expectedColumnIndexAfterMove = addOne(testColumnIndex);
+      const [{screen, user}, testStore, [,testTableTotalColumns], [,testRandomColumnIndex]] = await testTableActionsRenderer();
 
-      const { getByTestId } = testTableActionsRenderer(testFilePath);
-      fireEvent.click(getByTestId("right-button"));
+      const actualTableBeforeMove = getSelectedTable(testStore.getState());
+      const actualColumnBeforeMove = getContentsOfTableColumn(testRandomColumnIndex, actualTableBeforeMove)
+
+      const expectedColumnIndexAfterMove = clampAddFromZero(testTableTotalColumns, testRandomColumnIndex, 1)
+
+      await user.click(screen.getByTestId("right-button"));
 
       const actualTable = getSelectedTable(testStore.getState());
-      const actualColumnAfterMove = getContentOfTableColumn(
+      const actualColumnAfterMove = getContentsOfTableColumn(
         expectedColumnIndexAfterMove,
         actualTable,
       );
+
       expect(actualColumnAfterMove.equals(actualColumnBeforeMove)).toBeTruthy();
+
     });
 
-    test("Test down-button", () => {
-      const testRowIndex = randomArrayIndexMinusLastIndex(testTableTotalRows);
-      const testCellToMoveUp = testTableContents.getIn([
-        testRowIndex,
-        "contents",
-        testRandomColumnIndex,
-      ]);
-      testStore.dispatch(setSelectedTableCellId(testCellToMoveUp.get("id")));
+    test("Test down-button", async() => {
 
-      const actualRowBeforeMove = getContentOfTableRow(testRowIndex, testTable);
-      const expectedRowIndexAfterMove = addOne(testRowIndex);
+      const [{screen, user}, testStore, [testTableTotalRows], [testRandomRowIndex]] = await testTableActionsRenderer();
 
-      const { getByTestId } = testTableActionsRenderer(testFilePath);
-      fireEvent.click(getByTestId("down-button"));
+      const actualTableBeforeMove = getSelectedTable(testStore.getState());
+      const actualRowBeforeMove = getContentsOfTableRow(testRandomRowIndex, actualTableBeforeMove)
+
+      const expectedRowIndexAfterMove = clampAddFromZero(testTableTotalRows, testRandomRowIndex, 1)
+
+      await user.click(screen.getByTestId("down-button"));
 
       const actualTable = getSelectedTable(testStore.getState());
-      const actualRowAfterMove = getContentOfTableRow(
+      const actualRowAfterMove = getContentsOfTableRow(
         expectedRowIndexAfterMove,
         actualTable,
       );

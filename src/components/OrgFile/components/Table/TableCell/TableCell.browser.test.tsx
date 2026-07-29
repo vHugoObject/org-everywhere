@@ -1,11 +1,19 @@
 import React from "react";
 import thunk from "redux-thunk";
-import { describe, expect, beforeEach } from "vitest";
+import { describe, expect, afterEach } from "vitest";
+import { type RenderResult, cleanup } from 'vitest-browser-react'
+import type { UserEvent } from "vitest/browser"
 import { test } from "@fast-check/vitest";
 import { MemoryRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 import { createStore, applyMiddleware } from "redux";
-import readFixture from "../../../../../../test_helpers/index";
+import { trim, property, pipe } from "lodash/fp";
+import type { MapOf } from "immutable"
+import type { OrgTableCell, State } from "../../../../../types";
+import multipleTables from "../../../../../../test_helpers/fixtures/multiple_tables.org?raw";
+import { setup } from "../../../../../../test_helpers/index";
+import { TESTBASESTATE, TESTFILEPATH } from "../../../../../../test_helpers/Constants";
+import { randomArrayIndex, threeRandomArrayIndices } from "../../../../../../test_helpers/TestDataGenerators";
 import rootReducer from "../../../../../reducers/";
 import {
   setPath,
@@ -16,213 +24,226 @@ import {
   setSelectedTableId,
 } from "../../../../../actions/org";
 import {
-  STATIC_FILE_PREFIX,
   getSelectedTable,
+  getTableTotalColumnsCount,
+  getTableTotalRowsCount
 } from "../../../../../lib/org_utils";
-
-import { Map, Set, fromJS, List } from "immutable";
-import { shuffle, first, trim, pipe, range, curry, take } from "lodash/fp";
-import { render, fireEvent, cleanup } from "@testing-library/react";
 import TableCell from "./index";
 
-const capture = Map({ captureTemplates: [] });
-const testBaseState = {
-  org: {
-    past: [],
-    present: Map({
-      files: Map(),
-      fileSettings: [],
-      search: Map({
-        searchFilter: "",
-        searchFilterExpr: [],
-      }),
-      bookmarks: Map({
-        search: List(),
-        "task-list": List(),
-        refile: List(),
-      }),
-    }),
-    future: [],
-  },
-  syncBackend: Map({
-    isAuthenticated: true,
-  }),
-  capture,
-  base: fromJS({
-    customKeybindings: {},
-    shouldTapTodoToAdvance: true,
-    isLoading: Set(),
-    finderTab: "Search",
-    agendaTimeframe: "Week",
-    preferEditRawValues: false,
-  }),
-};
+const testCellRenderer = async(): Promise<[{user: UserEvent, screen: RenderResult},
+string,
+any,
+[MapOf<OrgTableCell>, MapOf<OrgTableCell>, MapOf<OrgTableCell>],
+[string, string, string]]> => {
+  const testHeaderIndex: number = 2;
+  const testDescriptionItemIndex: number = 1;
 
-describe("TableCell tests", () => {
-  afterEach(cleanup);
+  const testStore = createStore(rootReducer, TESTBASESTATE, applyMiddleware(thunk));
 
-  const testOrgFile = readFixture("multiple_tables");
-  const testFilePath = STATIC_FILE_PREFIX + "fixtureTestFile.org";
-  const testHeaderIndex = 2;
-  const testDescriptionItemIndex = 1;
+  testStore.dispatch(parseFile(TESTFILEPATH, multipleTables));
+  testStore.dispatch(setPath(TESTFILEPATH));
 
-  const randomArrayValue = pipe([shuffle, first]);
-  const randomArrayIndex = pipe([range(0), randomArrayValue]);
-  const twoRandomArrayIndices = pipe([range(0), shuffle, take(2)]);
+  const testState: State = testStore.getState();
+  const testHeaderId: number = testState.org.present.getIn([
+    "files",
+    TESTFILEPATH,
+    "headers",
+    testHeaderIndex,
+    "id",
+  ]);
+  const testTableId: number = testState.org.present.getIn([
+    "files",
+    TESTFILEPATH,
+    "headers",
+    testHeaderIndex,
+    "description",
+    testDescriptionItemIndex,
+    "id",
+  ]);
 
-  const getTableTotalColumnsCount = (table) =>
-    table.getIn(["contents", 0, "contents"]).size;
-  const getTableTotalRowsCount = (table) => table.getIn(["contents"]).size;
+  testStore.dispatch(setSelectedTableId(testTableId));
+  testStore.dispatch(selectHeader(testHeaderId));
+  testStore.dispatch(selectHeaderIndex(testHeaderIndex));
+  testStore.dispatch(
+    setSelectedDescriptionItemIndex(testDescriptionItemIndex),
+  );
 
-  let testStore,
-    testCellRenderer,
-    testListOfTableCellArguments,
-    testFirstCell,
-    testSecondCell,
-    testTextOfFirstCell,
-    testTextOfSecondCell;
+  const testTable = getSelectedTable(testStore.getState());
 
-  beforeEach(() => {
-    testStore = createStore(rootReducer, testBaseState, applyMiddleware(thunk));
+  const testTableContents = testTable.get("contents");
+  const testTableTotalRows = getTableTotalRowsCount(testTable);
+  const testTableTotalColumns = getTableTotalColumnsCount(testTable);
 
-    testStore.dispatch(parseFile(testFilePath, testOrgFile));
-    testStore.dispatch(setPath(testFilePath));
-
-    const testState = testStore.getState();
-    const testHeaderId = testState.org.present.getIn([
-      "files",
-      testFilePath,
-      "headers",
-      testHeaderIndex,
-      "id",
-    ]);
-    const testTableId = testState.org.present.getIn([
-      "files",
-      testFilePath,
-      "headers",
-      testHeaderIndex,
-      "description",
-      testDescriptionItemIndex,
-      "id",
-    ]);
-
-    testStore.dispatch(setSelectedTableId(testTableId));
-    testStore.dispatch(selectHeader(testHeaderId));
-    testStore.dispatch(selectHeaderIndex(testHeaderIndex));
-    testStore.dispatch(
-      setSelectedDescriptionItemIndex(testDescriptionItemIndex),
-    );
-
-    const testTable = getSelectedTable(testStore.getState());
-
-    const testTableContents = testTable.get("contents");
-    const testTableTotalRows = getTableTotalRowsCount(testTable);
-    const testTableTotalColumns = getTableTotalColumnsCount(testTable);
-
-    const testRandomRowIndex = randomArrayIndex(testTableTotalRows);
-    const testTableRowContents = testTableContents.get(testRandomRowIndex);
-    testListOfTableCellArguments = testTableRowContents
-      .get("contents")
-      .map((testCell, index) => {
-        return {
-          filePath: testFilePath,
-          headerIndex: testHeaderIndex,
-          descriptionItemIndex: testDescriptionItemIndex,
-          cellId: testCell.get("id"),
-          row: testRandomRowIndex,
-          column: index,
-        };
-      });
-
-    const [testFirstRandomColumnIndex, testSecondRandomColumnIndex] =
-      twoRandomArrayIndices(testTableTotalColumns);
-
-    testFirstCell = testTableContents.getIn([
-      testRandomRowIndex,
-      "contents",
-      testFirstRandomColumnIndex,
-    ]);
-    testSecondCell = testTableContents.getIn([
-      testRandomRowIndex,
-      "contents",
-      testSecondRandomColumnIndex,
-    ]);
-
-    testTextOfFirstCell = trim(testFirstCell.get("rawContents"));
-    testTextOfSecondCell = trim(testSecondCell.get("rawContents"));
-
-    const cellRenderer = curry((testStore, testListOfTableCellArguments) => {
-      return render(
-        <MemoryRouter
-          keyLength={0}
-          initialEntries={["/file/dir1/dir2/fixtureTestFile.org"]}
-        >
-          <Provider store={testStore}>
-            <table>
-              <tbody>
-                <tr>
-                  {testListOfTableCellArguments.map(
-                    (testArgumentsObject, index) => (
-                      <TableCell key={index} props={testArgumentsObject} />
-                    ),
-                  )}
-                </tr>
-              </tbody>
-            </table>
-          </Provider>
-        </MemoryRouter>,
-      );
-    });
-
-    testCellRenderer = cellRenderer(testStore);
+  const testRandomRowIndex = randomArrayIndex(testTableTotalRows);
+  const testTableRowContents = testTableContents.get(testRandomRowIndex);
+  const testListOfTableCellArguments = testTableRowContents
+    .get("contents")
+    .map((testCell, index) => {
+    return {
+      filePath: TESTFILEPATH,
+      headerIndex: testHeaderIndex,
+      descriptionItemIndex: testDescriptionItemIndex,
+      cellId: testCell.get("id"),
+      row: testRandomRowIndex,
+      column: index,
+    };
   });
 
-  test("Render table cell then select two cells", () => {
-    expect(
-      document.querySelector(".table-part__cell.table-part__cell--selected"),
-    ).toBeFalsy();
-    const { getByText } = testCellRenderer(testListOfTableCellArguments);
+  const [testFirstRandomColumnIndex, testSecondRandomColumnIndex,
+    testThirdRandomColumnIndex] =
+    threeRandomArrayIndices(testTableTotalColumns);
 
-    fireEvent.click(getByText(testTextOfFirstCell));
+  const testFirstCell = testTableContents.getIn([
+    testRandomRowIndex,
+    "contents",
+    testFirstRandomColumnIndex,
+  ]);
+  const testSecondCell = testTableContents.getIn([
+    testRandomRowIndex,
+    "contents",
+    testSecondRandomColumnIndex,
+  ]);
+
+  const testThirdCell = testTableContents.getIn([
+    testRandomRowIndex,
+    "contents",
+    testThirdRandomColumnIndex,
+  ]);
+
+  const testTextOfFirstCell = trim(testFirstCell.get("rawContents"));
+  const testTextOfSecondCell = trim(testSecondCell.get("rawContents"));
+  const testTextOfThirdCell = trim(testThirdCell.get("rawContents"));
+
+  const setupObj = await setup(
+    <MemoryRouter
+      keyLength={0}
+      initialEntries={["/file/dir1/dir2/fixtureTestFile.org"]}
+    >
+      <Provider store={testStore}>
+        <table>
+          <tbody>
+            <tr>
+              {testListOfTableCellArguments.map(
+                (testArgumentsObject, index) => (
+                  <TableCell key={index} props={testArgumentsObject} />
+                ),
+              )}
+            </tr>
+          </tbody>
+        </table>
+      </Provider>
+    </MemoryRouter>,
+  );
+  return [setupObj, TESTFILEPATH, testStore, [testFirstCell, testSecondCell, testTextOfThirdCell], [testTextOfFirstCell, testTextOfSecondCell, testTextOfThirdCell]]
+};
+
+
+
+describe("TableCell tests", async() => {
+  afterEach(cleanup);
+
+  test("Render table cell then select two cells", async() => {
+
+    const [{user, screen}, TESTFILEPATH, testStore, [testFirstCell, testSecondCell],[testTextOfFirstCell, testTextOfSecondCell]] = await testCellRenderer()
+
+    const actualFirstCell = screen.getByText(testTextOfFirstCell)
+    await user.click(actualFirstCell);
+
 
     expect(
-      document.querySelector(".table-part__cell.table-part__cell--selected"),
+      screen.container.querySelector(".table-part__cell.table-part__cell--selected"),
     ).toBeTruthy();
     const actualTextOfFirstCell = trim(
-      document.querySelector(".table-part__cell.table-part__cell--selected")
-        .textContent,
+      screen.container.querySelector(".table-part__cell.table-part__cell--selected")
+        ?.textContent ?? ""
     );
 
     expect(actualTextOfFirstCell).toBe(testTextOfFirstCell);
 
+
     const expectedFirstSelectedTableCellId = testFirstCell.get("id");
     const actualFirstSelectedTableCellId = testStore
       .getState()
-      .org.present.getIn(["files", testFilePath, "selectedTableCellId"]);
+      .org.present.getIn(["files", TESTFILEPATH, "selectedTableCellId"]);
 
     expect(actualFirstSelectedTableCellId).toBe(
       expectedFirstSelectedTableCellId,
     );
 
-    fireEvent.click(getByText(testTextOfSecondCell));
+    const actualEditModeAfterOneClick =
+      testStore
+        .getState()
+        .org.present.getIn(["files", TESTFILEPATH, "editMode"])
+
+    expect(actualEditModeAfterOneClick).toBeFalsy();
+
+
+    await user.click(screen.getByText(testTextOfSecondCell));
 
     expect(
-      document.querySelector(".table-part__cell.table-part__cell--selected"),
+      screen.container.querySelector(".table-part__cell.table-part__cell--selected"),
     ).toBeTruthy();
     const actualTextOfSecondCell = trim(
-      document.querySelector(".table-part__cell.table-part__cell--selected")
-        .textContent,
-    );
+      screen.container.querySelector(".table-part__cell.table-part__cell--selected")
+        ?.textContent ?? ""
+    )
+
 
     expect(actualTextOfSecondCell).toBe(testTextOfSecondCell);
 
     const expectedSecondSelectedTableCellId = testSecondCell.get("id");
     const actualSecondSelectedTableCellId = testStore
       .getState()
-      .org.present.getIn(["files", testFilePath, "selectedTableCellId"]);
+      .org.present.getIn(["files", TESTFILEPATH, "selectedTableCellId"]);
 
     expect(actualSecondSelectedTableCellId).toBe(
       expectedSecondSelectedTableCellId,
     );
+
+    const actualEditModeAfterTwoClicks =
+      testStore
+        .getState()
+        .org.present.getIn(["files", TESTFILEPATH, "editMode"])
+
+    expect(actualEditModeAfterTwoClicks).toBeFalsy();
+
+  });
+
+  test("Double clicking on a cell opens editMode", async() => {
+
+    const [{user, screen}, TESTFILEPATH, testStore, ___,[testTextOfFirstCell, testTextOfSecondCell]] = await testCellRenderer()
+
+    const actualFirstCell = screen.getByText(testTextOfFirstCell)
+    await user.dblClick(actualFirstCell);
+    expect(screen.getByText("Insert timestamp").element()).toBeTruthy()
+
+
+    const actualTextOfFirstCellEditContainer = trim(screen.getByTestId("edit-cell-container").element().textContent)
+
+    expect(actualTextOfFirstCellEditContainer).toBe(testTextOfFirstCell)
+
+    const actualEditModeAfterOneClick =
+      testStore
+        .getState()
+        .org.present.getIn(["files", TESTFILEPATH, "editMode"])
+
+    expect(actualEditModeAfterOneClick).toBe("table");
+
+
+    const actualSecondCell = screen.getByText(testTextOfSecondCell)
+    await user.click(actualSecondCell);
+    expect(screen.getByText("Insert timestamp").element()).toBeTruthy()
+
+    const actualTextOfSecondCellEditContainer = trim(screen.getByTestId("edit-cell-container").element().textContent)
+
+    expect(actualTextOfSecondCellEditContainer).toBe(testTextOfSecondCell)
+
+    const actualEditModeAfterTwoClicks =
+      testStore
+        .getState()
+        .org.present.getIn(["files", TESTFILEPATH, "editMode"])
+
+    expect(actualEditModeAfterTwoClicks).toBe("table");
+
   });
 });
