@@ -5,9 +5,9 @@ import { Provider } from "react-redux";
 import { createStore, applyMiddleware } from "redux";
 import { trim } from "lodash/fp";
 import { describe, expect, afterEach, test, assert } from "vitest";
-import { type RenderResult, cleanup } from 'vitest-browser-react'
-import type { UserEvent } from "vitest/browser"
-import type { MapOf } from "immutable"
+import { type RenderResult, cleanup } from "vitest-browser-react";
+import type { UserEvent } from "vitest/browser";
+import type { MapOf } from "immutable";
 import type { OrgTableCell } from "../../../../../types";
 import { randomArrayIndex } from "../../../../../../test_helpers/TestDataGenerators";
 import rootReducer from "../../../../../reducers/";
@@ -25,26 +25,36 @@ import {
 import {
   getSelectedTable,
   getTableTotalColumnsCount,
-  getTableTotalRowsCount
+  getTableTotalRowsCount,
 } from "../../../../../lib/org_utils";
 import multipleTables from "../../../../../../test_helpers/fixtures/multiple_tables.org?raw";
 import { setup, sleep } from "../../../../../../test_helpers/index";
-import { TESTBASESTATE, TESTFILEPATH } from "../../../../../../test_helpers/Constants";
+import {
+  TESTBASESTATE,
+  TESTFILEPATH,
+} from "../../../../../../test_helpers/Constants";
 import TableCellEditContainer from "./index";
 
 const EDITCELLCONTAINERID = "edit-cell-container";
 
-const testSetupFunction = (): [(testText: string, testId: number) => Promise<{user: UserEvent, screen: RenderResult}>,
-any,
-MapOf<OrgTableCell>,
-MapOf<OrgTableCell>,
-[number, number, number, number]
+const testSetupFunction = (): [
+  (
+    testText: string,
+    testId: number,
+  ) => Promise<{ user: UserEvent; screen: RenderResult }>,
+  any,
+  MapOf<OrgTableCell>,
+  MapOf<OrgTableCell>,
+  [number, number, number, number],
 ] => {
-
   const testHeaderIndex: number = 0;
   const testDescriptionItemIndex: number = 0;
 
-  const testStore = createStore(rootReducer, TESTBASESTATE, applyMiddleware(thunk));
+  const testStore = createStore(
+    rootReducer,
+    TESTBASESTATE,
+    applyMiddleware(thunk),
+  );
 
   testStore.dispatch(parseFile(TESTFILEPATH, multipleTables));
   testStore.dispatch(setPath(TESTFILEPATH));
@@ -68,13 +78,10 @@ MapOf<OrgTableCell>,
     "id",
   ]);
 
-
   testStore.dispatch(setSelectedTableId(testTableId));
   testStore.dispatch(selectHeader(testHeaderId));
   testStore.dispatch(selectHeaderIndex(testHeaderIndex));
-  testStore.dispatch(
-    setSelectedDescriptionItemIndex(testDescriptionItemIndex),
-  );
+  testStore.dispatch(setSelectedDescriptionItemIndex(testDescriptionItemIndex));
 
   const testTable = getSelectedTable(testStore.getState());
   const testTableContents = testTable.get("contents");
@@ -97,32 +104,48 @@ MapOf<OrgTableCell>,
     testRandomColumnIndex,
   ]);
 
-  const cellEditContainerRenderer = (testStore) => async(testText: string, testId: number): Promise<{user: UserEvent, screen: RenderResult}> => {
-    return await setup(
-      <MemoryRouter
-        keyLength={0}
-        initialEntries={["/file/dir1/dir2/fixtureTestFile.org"]}
-      >
-        <Provider store={testStore}>
-          <TableCellEditContainer
-            filePath={TESTFILEPATH}
-            cellValue={testText}
-            cellId={testId}
-          />
-        </Provider>
-      </MemoryRouter>,
-    );
-  };
+  const cellEditContainerRenderer =
+    (testStore) =>
+    async (
+      testText: string,
+      testId: number,
+    ): Promise<{ user: UserEvent; screen: RenderResult }> => {
+      return await setup(
+        <MemoryRouter
+          keyLength={0}
+          initialEntries={["/file/dir1/dir2/fixtureTestFile.org"]}
+        >
+          <Provider store={testStore}>
+            <TableCellEditContainer
+              filePath={TESTFILEPATH}
+              cellValue={testText}
+              cellId={testId}
+            />
+          </Provider>
+        </MemoryRouter>,
+      );
+    };
 
-  return [cellEditContainerRenderer(testStore), testStore, testEmptyCell, testCellWithText,
-    [testHeaderIndex, testDescriptionItemIndex, testRandomIndexOfRowWithText, testRandomColumnIndex]]
-}
+  return [
+    cellEditContainerRenderer(testStore),
+    testStore,
+    testEmptyCell,
+    testCellWithText,
+    [
+      testHeaderIndex,
+      testDescriptionItemIndex,
+      testRandomIndexOfRowWithText,
+      testRandomColumnIndex,
+    ],
+  ];
+};
 
-describe("TableCellEditContainer tests", async() => {
+describe("TableCellEditContainer tests", async () => {
   afterEach(cleanup);
 
-  test("Enter text into empty cell", async() => {
-    const [testCellEditContainerRenderer, testStore, testEmptyCell] = testSetupFunction()
+  test("Enter text into empty cell", async () => {
+    const [testCellEditContainerRenderer, testStore, testEmptyCell] =
+      testSetupFunction();
     const testCellId = testEmptyCell.get("id");
     const testCellText = testEmptyCell.get("rawContents");
 
@@ -134,13 +157,13 @@ describe("TableCellEditContainer tests", async() => {
     );
     expect(screen.getByTestId(EDITCELLCONTAINERID)).toBeTruthy();
     const newValue = "200";
-    await user.type(screen.getByTestId(EDITCELLCONTAINERID), newValue)
+    await user.type(screen.getByTestId(EDITCELLCONTAINERID), newValue);
     expect(screen.getByText(newValue)).toBeTruthy();
-
   });
 
-  test("Enter text into a full cell", async() => {
-    const [testCellEditContainerRenderer, testStore, ,testCellWithText] = testSetupFunction()
+  test("Enter text into a full cell", async () => {
+    const [testCellEditContainerRenderer, testStore, , testCellWithText] =
+      testSetupFunction();
     const testCellId = testCellWithText.get("id");
     const testCellText = testCellWithText.get("rawContents");
     testStore.dispatch(setSelectedTableCellId(testCellId));
@@ -152,12 +175,13 @@ describe("TableCellEditContainer tests", async() => {
 
     expect(screen.getByText(trim(testCellText))).toBeTruthy();
     const newValue = "Motz";
-    await user.type(screen.getByTestId(EDITCELLCONTAINERID), newValue)
+    await user.type(screen.getByTestId(EDITCELLCONTAINERID), newValue);
     expect(screen.getByText(newValue)).toBeTruthy();
   });
 
-  test("Insert timestamp into a empty cell", async() => {
-    const [testCellEditContainerRenderer, testStore, testEmptyCell] = testSetupFunction()
+  test("Insert timestamp into a empty cell", async () => {
+    const [testCellEditContainerRenderer, testStore, testEmptyCell] =
+      testSetupFunction();
     const testCellId = testEmptyCell.get("id");
     const testCellText = testEmptyCell.get("rawContents");
     testStore.dispatch(setSelectedTableCellId(testCellId));
@@ -167,13 +191,14 @@ describe("TableCellEditContainer tests", async() => {
       testCellId,
     );
     expect(screen.getByTestId(EDITCELLCONTAINERID)).toBeTruthy();
-    const expectedTimestamp = getCurrentJSDateAsOrgTimestampString()
-    await user.click(screen.getByTestId("edit-cell-container"))
+    const expectedTimestamp = getCurrentJSDateAsOrgTimestampString();
+    await user.click(screen.getByTestId("edit-cell-container"));
     expect(screen.getByText(expectedTimestamp)).toBeTruthy();
   });
 
-  test("Insert timestamp into a full cell", async() => {
-    const [testCellEditContainerRenderer, testStore, ,testCellWithText] = testSetupFunction()
+  test("Insert timestamp into a full cell", async () => {
+    const [testCellEditContainerRenderer, testStore, , testCellWithText] =
+      testSetupFunction();
     const testCellId = testCellWithText.get("id");
     const testCellText = testCellWithText.get("rawContents");
     testStore.dispatch(setSelectedTableCellId(testCellId));
@@ -184,14 +209,25 @@ describe("TableCellEditContainer tests", async() => {
     );
 
     expect(screen.getByTestId(EDITCELLCONTAINERID)).toBeTruthy();
-    const expectedTimestamp = getCurrentJSDateAsOrgTimestampString()
+    const expectedTimestamp = getCurrentJSDateAsOrgTimestampString();
     const expectedValue = `${expectedTimestamp}${testCellText}`;
-    await user.click(screen.getByTestId("edit-cell-container"))
+    await user.click(screen.getByTestId("edit-cell-container"));
     expect(screen.getByText(expectedValue)).toBeTruthy();
   });
 
-  test("Confirm cell edit is dispatched on blur", async() => {
-    const [testCellEditContainerRenderer, testStore, ,testCellWithText, [testHeaderIndex, testDescriptionItemIndex, testRandomIndexOfRowWithText, testRandomColumnIndex]] = testSetupFunction()
+  test("Confirm cell edit is dispatched when cell is no longer selected", async () => {
+    const [
+      testCellEditContainerRenderer,
+      testStore,
+      _,
+      testCellWithText,
+      [
+        testHeaderIndex,
+        testDescriptionItemIndex,
+        testRandomIndexOfRowWithText,
+        testRandomColumnIndex,
+      ],
+    ] = testSetupFunction();
     const testCellId = testCellWithText.get("id");
     const testCellText = testCellWithText.get("rawContents");
     testStore.dispatch(setSelectedTableCellId(testCellId));
@@ -202,32 +238,26 @@ describe("TableCellEditContainer tests", async() => {
     );
     const newValue = "Seymour";
 
+    await user.type(screen.getByTestId(EDITCELLCONTAINERID), newValue);
+    testStore.dispatch(setSelectedTableCellId(null));
+    await sleep(0);
 
-    await user.type(screen.getByTestId(EDITCELLCONTAINERID), newValue)
-
-    const editCellContainer = screen.getByTestId(EDITCELLCONTAINERID).element()
-    editCellContainer.blur()
-
-    const actualUpdatedFile = testStore
+    const actualUpdatedCellValue = testStore
       .getState()
-      .org.present.getIn(["files", TESTFILEPATH]);
+      .org.present.getIn([
+        "files",
+        TESTFILEPATH,
+        "headers",
+        testHeaderIndex,
+        "description",
+        testDescriptionItemIndex,
+        "contents",
+        testRandomIndexOfRowWithText,
+        "contents",
+        testRandomColumnIndex,
+        "rawContents",
+      ]);
 
-    const actualEditModeValue = actualUpdatedFile.get("editMode");
-
-    expect(actualEditModeValue).toBe(null);
-
-    const actualUpdatedCellValue = actualUpdatedFile.getIn([
-      "headers",
-      testHeaderIndex,
-      "description",
-      testDescriptionItemIndex,
-      "contents",
-      testRandomIndexOfRowWithText,
-      "contents",
-      testRandomColumnIndex,
-      "rawContents",
-    ]);
-
-    assert.include(actualUpdatedCellValue, newValue)
+    assert.include(actualUpdatedCellValue, newValue);
   });
 });

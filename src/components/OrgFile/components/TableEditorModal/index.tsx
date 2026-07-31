@@ -8,6 +8,7 @@ import { curry } from "lodash/fp";
 import Table from "../Table/index";
 import TableActionButtons from "./components/TableActionButtons";
 import { closePopup } from "../../../../actions/base";
+import { exitEditMode } from "../../../../actions/org";
 import { getTable } from "../../../../lib/org_utils";
 import "./stylesheet.css";
 
@@ -46,6 +47,7 @@ const TableEditorModal = ({ onClose }: { onClose: () => void }) => {
   const handlePopupClose = () => {
     setIsVisible(false);
     dispatch(closePopup());
+    dispatch(exitEditMode());
   };
 
   if (

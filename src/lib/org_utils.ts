@@ -1,5 +1,5 @@
 import { formatDistanceToNow } from "date-fns";
-import { List, Map, fromJS, type MapOf } from "immutable";
+import { List, Map, fromJS, type MapOf, get, getIn } from "immutable";
 import { range, type Function1 } from "lodash";
 import { curry, partialRight, repeat } from "lodash/fp";
 import type {
@@ -17,6 +17,7 @@ import type {
   OrgTimestamp,
   OrgTodoKeywordSet,
   State,
+  EditModeType,
 } from "../types";
 import substituteTemplateVariables from "./capture_template_substitution";
 import { attributedStringToRawText } from "./export_org";
@@ -1287,15 +1288,54 @@ export const getTableCell = curry(
       filePath: string;
       headerIndex: number;
       descriptionItemIndex: number;
-      row: MapOf<OrgTableRow>;
+      row: number;
       column: number;
     },
     state: State,
-  ): never => {
+  ): MapOf<OrgTableCell> => {
     const table: MapOf<OrgTable> = getTable(
       { filePath, headerIndex, descriptionItemIndex },
       state,
     );
-    return table.getIn(["contents", row, "contents", column]);
+    return getIn(table, ["contents", row, "contents", column]);
   },
+);
+
+export const getTableTotalColumnsCount = (table: MapOf<OrgTable>): number => {
+  return getIn(table, ["contents", 0, "contents"]).size;
+};
+
+export const getTableTotalRowsCount = (table: MapOf<OrgTable>) => {
+  return getIn(table, ["contents"]).size;
+};
+
+export const getContentsOfTableColumn = curry(
+  (columnIndex: number, table: MapOf<OrgTable>): List<MapOf<OrgTableCell>> => {
+    return table.get("contents").map((row) => {
+      return getIn(row, ["contents", columnIndex]);
+    });
+  },
+);
+
+export const getContentsOfTableRow = curry(
+  (rowIndex: number, table: MapOf<OrgTable>): List<MapOf<OrgTableCell>> => {
+    return getIn(table, ["contents", rowIndex]);
+  },
+);
+
+export const getSelectedCellId = curry(
+  (filePath: string, state: State): number | null => {
+    return getIn(state.org.present, ["files", filePath, "selectedTableCellId"]);
+  },
+);
+
+export const getCurrentEditMode = curry(
+  (filePath: string, state: State): EditModeType | null => {
+    return getIn(state.org.present, ["files", filePath, "editMode"]);
+  },
+);
+
+export const getInTableEditMode = curry(
+  (filePath: string, state: State) =>
+    getIn(state.org.present, ["files", filePath, "editMode"]) === "table",
 );

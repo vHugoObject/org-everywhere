@@ -1,4 +1,4 @@
-import React, { type RefObject, useMemo } from "react";
+import React, { type RefObject } from "react";
 import TableCell from "./TableCell/index";
 import "./stylesheet.css";
 

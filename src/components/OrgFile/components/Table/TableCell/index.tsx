@@ -1,44 +1,42 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import classNames from "classnames";
-import { is } from "immutable";
-import { curry, over, property, map, pipe, replace } from "lodash/fp";
+import { is, type MapOf } from "immutable";
+import { curry } from "lodash/fp";
+import type { State, OrgTableCell } from "../../../../../types";
 import AttributedString from "../../AttributedString";
 import TableCellEditContainer from "../TableCellEditContainer/index";
-import { getTableCell } from "../../../../../lib/org_utils";
+import {
+  getTableCell,
+  getSelectedCellId,
+  getInTableEditMode,
+} from "../../../../../lib/org_utils";
 import { activatePopup } from "../../../../../actions/base";
 import {
   setSelectedTableCellId,
   advanceCheckboxState,
+  enterEditMode,
 } from "../../../../../actions/org";
 import "./stylesheet.css";
 
-// These are the default values for textArea according to MDN
-// remove
-const DEFAULTROWSFOREDITCONTAINER: number = 2;
-const DEFAULTCOLSFOREDITCONTAINER: number = 20;
-
-const getInTableEditMode = curry(
-  (filePath, state) =>
-    state.org.present.getIn(["files", filePath, "editMode"]) === "table",
-);
-const getSelectedCellId = curry((filePath, state) => {
-  return state.org.present.getIn(["files", filePath, "selectedTableCellId"]);
-});
+type TableCellProps = {
+  filePath: string;
+  headerIndex: number;
+  descriptionItemIndex: number;
+  cellId: number;
+  row: number;
+  column: number;
+};
 
 const TableCell = ({
   props: { filePath, headerIndex, descriptionItemIndex, cellId, row, column },
+}: {
+  props: TableCellProps;
 }) => {
   const dispatch = useDispatch();
   const inTableEditMode = useSelector(getInTableEditMode(filePath));
   const selectedCellId = useSelector(getSelectedCellId(filePath));
   const tableCellRef = useRef<HTMLTableCellElement | null>(null);
-  const [rowsForEditContainer, setRowsForEditContainer] = useState<number>(
-    DEFAULTROWSFOREDITCONTAINER,
-  );
-  const [colsForEditContainer, setColsForEditContainer] = useState<number>(
-    DEFAULTCOLSFOREDITCONTAINER,
-  );
 
   const [isCellSelected, setIsCellSelected] = useState(
     cellId === selectedCellId,
@@ -51,9 +49,9 @@ const TableCell = ({
     row,
     column,
   });
-  const cell = useSelector(tableCellGetter, is);
+  const cell: MapOf<OrgTableCell> = useSelector(tableCellGetter, is);
   const cellContents = cell.get("contents");
-  const cellRawContents = cell.get("rawContents");
+  const cellRawContents: string = cell.get("rawContents");
 
   useEffect(() => {
     if (cellId == selectedCellId) {
@@ -67,17 +65,21 @@ const TableCell = ({
     "table-part__cell--selected": isCellSelected,
   });
 
-  const handleCellSelect = () => {
+  const handleSingleClick = () => {
     setIsCellSelected(true);
     tableCellRef.current?.focus();
     dispatch(setSelectedTableCellId(cellId));
   };
 
-  const handleCheckboxClick = (listItemId: string) => {
+  const handleDoubleClick = () => {
+    dispatch(enterEditMode("table"));
+  };
+
+  const handleCheckboxClick = (listItemId: number) => {
     dispatch(advanceCheckboxState(listItemId));
   };
 
-  const handleTimestampClick = (timestampId: string) => {
+  const handleTimestampClick = (timestampId: number) => {
     dispatch(activatePopup("timestamp-editor", { timestampId }));
   };
 
@@ -91,7 +93,8 @@ const TableCell = ({
     <td
       className={className}
       key={cellId}
-      onClick={handleCellSelect}
+      onClick={handleSingleClick}
+      onDoubleClick={handleDoubleClick}
       ref={tableCellRef}
       tabIndex={-1}
     >
@@ -100,8 +103,6 @@ const TableCell = ({
           filePath={filePath}
           cellValue={cellRawContents}
           cellId={cellId}
-          rows={rowsForEditContainer}
-          cols={colsForEditContainer}
         />
       ) : (
         <AttributedString
