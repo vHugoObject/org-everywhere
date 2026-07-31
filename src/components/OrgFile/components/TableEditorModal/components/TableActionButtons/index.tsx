@@ -1,30 +1,40 @@
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { curry } from "lodash/fp";
 import "./stylesheet.css";
 import { getIcon } from "../../../../../UI/icons.tsx";
+import {
+  getSelectedCellId,
+  getInTableEditMode,
+} from "../../../../../../lib/org_utils";
 import {
   addNewTableRow,
   removeTableRow,
   addNewTableColumn,
   removeTableColumn,
   enterEditMode,
+  exitEditMode,
   moveTableRowUp,
   moveTableRowDown,
   moveTableColumnLeft,
   moveTableColumnRight,
 } from "../../../../../../actions/org";
 
-const getSelectedCellId = curry((filePath: string, state) => {
-  return state.org.present.getIn(["files", filePath, "selectedTableCellId"]);
-});
-
 const TableActionButtons = ({ filePath }: { filePath: string }) => {
   const dispatch = useDispatch();
   const selectedTableCellId = useSelector(getSelectedCellId(filePath));
+  const editMode = useSelector(getInTableEditMode(filePath));
 
-  const handleEnterTableEditMode = () => {
-    dispatch(enterEditMode("table"));
+  const handleToggleEditMode = () => {
+    if (!selectedTableCellId) {
+      return;
+    }
+    if (!editMode) {
+      dispatch(enterEditMode("table"));
+      return;
+    }
+
+    dispatch(dispatch(exitEditMode));
+    return;
   };
 
   const handleAddNewTableRow = () => {
@@ -67,9 +77,7 @@ const TableActionButtons = ({ filePath }: { filePath: string }) => {
             <button
               className=" table-action-drawer__edit-icon-container"
               data-testid="edit-cell-button"
-              onClick={() =>
-                selectedTableCellId ? handleEnterTableEditMode() : undefined
-              }
+              onClick={handleToggleEditMode}
             >
               {getIcon("pencil")}
             </button>
