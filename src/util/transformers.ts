@@ -39,7 +39,7 @@ import {
   filter,
   constant,
   lt,
-  clamp
+  clamp,
 } from "lodash/fp";
 import { addDays, subDays, addWeeks, addMonths, addYears } from "date-fns/fp";
 import type { ReadonlyNonEmptyArray } from "fp-ts/ReadonlyNonEmptyArray";
@@ -53,13 +53,20 @@ import {
 } from "fp-ts/ReadonlyArray";
 
 export const filterMap = curry(pipe([map, compact]));
-export const clampAddFromZero = (max: number, augend: number, addend: number): number => {
-  return clamp(0, max - 1, augend + addend)
-
-}
-export const clampSubtractFromZero = (max: number, minuend: number, subtrahend: number): number => {
-  return clamp(0, max - 1, minuend - subtrahend)
-}
+export const clampAddFromZero = (
+  max: number,
+  augend: number,
+  addend: number,
+): number => {
+  return clamp(0, max - 1, augend + addend);
+};
+export const clampSubtractFromZero = (
+  max: number,
+  minuend: number,
+  subtrahend: number,
+): number => {
+  return clamp(0, max - 1, minuend - subtrahend);
+};
 
 export const mapSum = map(sum);
 

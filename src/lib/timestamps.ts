@@ -34,7 +34,7 @@ import {
   partialRight,
   isString,
   zip,
-  startsWith
+  startsWith,
 } from "lodash/fp";
 import { type MapOf, Map, get, setIn } from "immutable";
 import type {
@@ -48,9 +48,8 @@ import {
   TIMESTAMPUNITSSET,
   ORGTIMESTAMPDATEKEYNAMES,
   DELAYTYPESSET,
-  DAYABBREVS
+  DAYABBREVS,
 } from "./constants";
-
 
 export const padTimePart = padCharsStart("0", 2);
 export const convertDayNumberIntoDayName = (
@@ -96,7 +95,6 @@ export const isValidDelayType = (
   value: unknown,
   delayTypesSet = DELAYTYPESSET,
 ): value is RepeaterType => isString(value) && delayTypesSet.has(value);
-
 
 const renderAsTextReducer = (
   currStr: string,
@@ -384,19 +382,23 @@ export const dateDuration = (
 
 export const dateDurationForClockString = pipe([
   dateDuration,
-  padCharsStart(" ", 5)
-])
+  padCharsStart(" ", 5),
+]);
 
-export const createTimestampDuration = (func: (intervalStart: Date, intervalEnd: Date) => string) => (
-  startTimestamp: MapOf<OrgTimestampPart>,
-  endTimestamp: MapOf<OrgTimestampPart>,
-): string => {
-  let [start, end] = map(dateForTimestamp)([startTimestamp, endTimestamp]);
-  return func(start, end);
-};
+export const createTimestampDuration =
+  (func: (intervalStart: Date, intervalEnd: Date) => string) =>
+  (
+    startTimestamp: MapOf<OrgTimestampPart>,
+    endTimestamp: MapOf<OrgTimestampPart>,
+  ): string => {
+    let [start, end] = map(dateForTimestamp)([startTimestamp, endTimestamp]);
+    return func(start, end);
+  };
 
-export const timestampDuration = createTimestampDuration(dateDuration)
-export const timestampDurationForClockString = createTimestampDuration(dateDurationForClockString)
+export const timestampDuration = createTimestampDuration(dateDuration);
+export const timestampDurationForClockString = createTimestampDuration(
+  dateDurationForClockString,
+);
 
 export const millisDuration = (millis: number | undefined): string => {
   if (millis === undefined) {

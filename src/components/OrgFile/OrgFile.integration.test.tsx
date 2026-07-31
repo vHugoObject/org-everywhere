@@ -28,6 +28,64 @@ import { STATIC_FILE_PREFIX } from "../../lib/org_utils";
 
 afterEach(cleanup);
 
+const testSetup = () => {
+  const testOrgFile = readFixture("main_test_file");
+
+  let store = createStore(
+    rootReducer,
+    {
+      org: {
+        past: [],
+        present: Map({
+          files: Map(),
+          fileSettings: [],
+          search: Map({
+            searchFilter: "",
+            searchFilterExpr: [],
+          }),
+          bookmarks: Map({
+            search: List(),
+            "task-list": List(),
+            refile: List(),
+          }),
+        }),
+        future: [],
+      },
+      syncBackend: Map({
+        isAuthenticated: true,
+      }),
+      capture: Map({ captureTemplates: [] }),
+      base: fromJS({
+        customKeybindings: {},
+        shouldTapTodoToAdvance: true,
+        isLoading: Set(),
+        finderTab: "Search",
+        agendaTimeframe: "Week",
+        preferEditRawValues: false,
+      }),
+    },
+    applyMiddleware(thunk),
+  );
+
+  store.dispatch(
+    parseFile(STATIC_FILE_PREFIX + "fixtureTestFile.org", testOrgFile),
+  );
+
+  store.dispatch(setPath(STATIC_FILE_PREFIX + "fixtureTestFile.org"));
+
+  return render(
+    <MemoryRouter
+      keyLength={0}
+      initialEntries={["/file/dir1/dir2/fixtureTestFile.org"]}
+    >
+      <Provider store={store}>
+        <HeaderBar />
+        <OrgFile path={STATIC_FILE_PREFIX + "fixtureTestFile.org"} />
+      </Provider>
+    </MemoryRouter>,
+  );
+};
+
 describe("Render all views", async () => {
   const testOrgFile = readFixture("main_test_file");
 
@@ -280,37 +338,44 @@ describe("Render all views", async () => {
 
     describe("Tracking TODO state changes", async () => {
       describe("Default settings", async () => {
-        test.skip("Does not track TODO state change for repeating todos", async () => {
+        test("shouldLogIntoDrawer enabled", async () => {
+          expect(screen.queryByText(":LOGBOOK:...")).toBeFalsy();
+          expect(store.getState().base.toJS().shouldLogIntoDrawer).toBeFalsy();
+          store.dispatch(setShouldLogIntoDrawer(true));
+
+          fireEvent.click(screen.getByText("Another top level header"));
+          fireEvent.click(screen.getByText("A repeating todo"));
+
+          fireEvent.click(screen.getByText("TODO"));
+          fireEvent.click(screen.getByText("A repeating todo"));
+
+          // After the TODO is toggled, it's still just TODO, because
+          // the state got tracked
+          expect(screen.queryByText("DONE")).toBeFalsy();
+          // TODO has been scheduled one day into the future
+          expect(screen.queryByText("<2020-04-05 Sun +1d>")).toBeFalsy();
+          expect(screen.queryByText("<2020-04-06 Mon +1d>")).toBeTruthy();
+
+          expect(screen.queryByText(":LOGBOOK:...")).toBeTruthy();
+        });
+        test("shouldLogIntoDrawer disabled", async () => {
           expect(screen.queryByText(":LOGBOOK:...")).toBeFalsy();
           expect(store.getState().base.toJS().shouldLogIntoDrawer).toBeFalsy();
 
           fireEvent.click(screen.getByText("Another top level header"));
           fireEvent.click(screen.getByText("A repeating todo"));
 
-          fireEvent.click(screen.queryByText("TODO"));
+          fireEvent.click(screen.getByText("TODO"));
           fireEvent.click(screen.getByText("A repeating todo"));
-
-          expect(screen.queryByText(":LOGBOOK:...")).toBeFalsy();
-
-          store.dispatch(setShouldLogIntoDrawer(true));
-          expect(store.getState().base.toJS().shouldLogIntoDrawer).toBeTruthy();
-
-          fireEvent.click(getByText("Another top level header"));
-          fireEvent.click(getByText("A repeating todo"));
-          expect(queryByText(":LOGBOOK:...")).toBeFalsy();
-
-          expect(queryByText("<2020-04-05 Sun +1d>")).toBeTruthy();
-          fireEvent.click(queryByText("TODO"));
-          fireEvent.click(getByText("A repeating todo"));
 
           // After the TODO is toggled, it's still just TODO, because
           // the state got tracked
-          expect(queryByText("DONE")).toBeFalsy();
+          expect(screen.queryByText("DONE")).toBeFalsy();
           // TODO has been scheduled one day into the future
-          expect(queryByText("<2020-04-05 Sun +1d>")).toBeFalsy();
-          expect(queryByText("<2020-04-06 Mon +1d>")).toBeTruthy();
+          expect(screen.queryByText("<2020-04-05 Sun +1d>")).toBeFalsy();
+          expect(screen.queryByText("<2020-04-06 Mon +1d>")).toBeTruthy();
 
-          expect(queryByText(":LOGBOOK:...")).toBeTruthy();
+          expect(screen.queryByText(":LOGBOOK:...")).toBeFalsy();
         });
       });
     });
@@ -430,7 +495,7 @@ describe("Render all views", async () => {
         });
 
         // did I delete this
-        test.skip("sends the selected header and its body as an email", async () => {
+        test("sends the selected header and its body as an email", async () => {
           fireEvent.click(screen.queryByText("Another top level header"));
           fireEvent.click(screen.getByTestId("share"));
           expect(global.open).toBeCalledWith(
@@ -650,7 +715,7 @@ describe("Render all views", async () => {
 
         const getTableRows = property(["rows"]);
 
-        const getContentOfTableColumn = curry((columnNumber, table) => {
+        const getContentsOfTableColumn = curry((columnNumber, table) => {
           return pipe([
             getTableRows,
             map(property(["cells", columnNumber, "textContent"])),
@@ -663,14 +728,14 @@ describe("Render all views", async () => {
           return pipe([
             getTableColumnsCount,
             times((columnNumber) =>
-              getContentOfTableColumn(columnNumber, table),
+              getContentsOfTableColumn(columnNumber, table),
             ),
           ])(table);
         };
 
         const getTableRowsCount = property(["rows", "length"]);
 
-        const getContentOfTableRow = curry((rowNumber, table) => {
+        const getContentsOfTableRow = curry((rowNumber, table) => {
           return pipe([
             property(["rows", rowNumber, "cells"]),
             map(property(["textContent"])),
@@ -680,7 +745,7 @@ describe("Render all views", async () => {
         const getAllTableRowsAsListOfLists = (table) => {
           return pipe([
             getTableRowsCount,
-            times((rowNumber) => getContentOfTableRow(rowNumber, table)),
+            times((rowNumber) => getContentsOfTableRow(rowNumber, table)),
           ])(table);
         };
 
@@ -766,8 +831,8 @@ describe("Render all views", async () => {
           const tableBeforeMove = document.querySelector(".table-part");
 
           const [firstTestRowBeforeEdit, secondTestRowBeforeEdit] = over([
-            getContentOfTableRow(4),
-            getContentOfTableRow(5),
+            getContentsOfTableRow(4),
+            getContentsOfTableRow(5),
           ])(tableBeforeMove);
 
           // click cell to open table editor
@@ -786,8 +851,8 @@ describe("Render all views", async () => {
           const tableAfterMove = document.querySelector(".table-part");
 
           const [firstTestRowAfterEdit, secondTestRowAfterEdit] = over([
-            getContentOfTableRow(4),
-            getContentOfTableRow(5),
+            getContentsOfTableRow(4),
+            getContentsOfTableRow(5),
           ])(tableAfterMove);
 
           expect(firstTestRowBeforeEdit).toStrictEqual(secondTestRowAfterEdit);
@@ -802,8 +867,8 @@ describe("Render all views", async () => {
           const tableBeforeMove = document.querySelector(".table-part");
 
           const [firstTestRowBeforeEdit, secondTestRowBeforeEdit] = over([
-            getContentOfTableRow(9),
-            getContentOfTableRow(10),
+            getContentsOfTableRow(9),
+            getContentsOfTableRow(10),
           ])(tableBeforeMove);
 
           // click cell to open table editor
@@ -824,8 +889,8 @@ describe("Render all views", async () => {
           const tableAfterMove = document.querySelector(".table-part");
 
           const [firstTestRowAfterEdit, secondTestRowAfterEdit] = over([
-            getContentOfTableRow(9),
-            getContentOfTableRow(10),
+            getContentsOfTableRow(9),
+            getContentsOfTableRow(10),
           ])(tableAfterMove);
           expect(firstTestRowBeforeEdit).toStrictEqual(secondTestRowAfterEdit);
           expect(secondTestRowBeforeEdit).toStrictEqual(firstTestRowAfterEdit);
@@ -840,8 +905,8 @@ describe("Render all views", async () => {
           // get the first column
 
           const [firstTestColumnBeforeEdit, secondTestColumnBeforeEdit] = over([
-            getContentOfTableColumn(0),
-            getContentOfTableColumn(1),
+            getContentsOfTableColumn(0),
+            getContentsOfTableColumn(1),
           ])(tableBeforeMove);
 
           // click cell to open table editor
@@ -862,8 +927,8 @@ describe("Render all views", async () => {
           const tableAfterMove = document.querySelector(".table-part");
 
           const [firstTestColumnAfterEdit, secondTestColumnAfterMove] = over([
-            getContentOfTableColumn(0),
-            getContentOfTableColumn(1),
+            getContentsOfTableColumn(0),
+            getContentsOfTableColumn(1),
           ])(tableAfterMove);
 
           expect(firstTestColumnBeforeEdit).toStrictEqual(
@@ -882,8 +947,8 @@ describe("Render all views", async () => {
           const tableBeforeMove = document.querySelector(".table-part");
 
           const [firstTestColumnBeforeEdit, secondTestColumnBeforeEdit] = over([
-            getContentOfTableColumn(2),
-            getContentOfTableColumn(3),
+            getContentsOfTableColumn(2),
+            getContentsOfTableColumn(3),
           ])(tableBeforeMove);
 
           // click cell to open table editor
@@ -904,8 +969,8 @@ describe("Render all views", async () => {
           const tableAfterMove = document.querySelector(".table-part");
 
           const [firstTestColumnAfterEdit, secondTestColumnAfterMove] = over([
-            getContentOfTableColumn(2),
-            getContentOfTableColumn(3),
+            getContentsOfTableColumn(2),
+            getContentsOfTableColumn(3),
           ])(tableAfterMove);
 
           expect(firstTestColumnBeforeEdit).toStrictEqual(
@@ -928,8 +993,8 @@ describe("Render all views", async () => {
             secondTestRowBeforeEdit,
             rowCountBeforeEdit,
           ] = over([
-            getContentOfTableRow(7),
-            getContentOfTableRow(8),
+            getContentsOfTableRow(7),
+            getContentsOfTableRow(8),
             getTableRowsCount,
           ])(tableBeforeMove);
 
@@ -952,9 +1017,9 @@ describe("Render all views", async () => {
             thirdTestRowAfterEdit,
             rowCountAfterEdit,
           ] = over([
-            getContentOfTableRow(7),
-            getContentOfTableRow(8),
-            getContentOfTableRow(9),
+            getContentsOfTableRow(7),
+            getContentsOfTableRow(8),
+            getContentsOfTableRow(9),
             getTableRowsCount,
           ])(tableAfterMove);
 
@@ -979,8 +1044,8 @@ describe("Render all views", async () => {
             secondTestColumnBeforeEdit,
             columnCountBeforeEdit,
           ] = over([
-            getContentOfTableColumn(2),
-            getContentOfTableColumn(3),
+            getContentsOfTableColumn(2),
+            getContentsOfTableColumn(3),
             getTableColumnsCount,
           ])(tableBeforeMove);
 
@@ -1003,9 +1068,9 @@ describe("Render all views", async () => {
             thirdTestColumnAfterEdit,
             columnCountAfterEdit,
           ] = over([
-            getContentOfTableColumn(2),
-            getContentOfTableColumn(3),
-            getContentOfTableColumn(4),
+            getContentsOfTableColumn(2),
+            getContentsOfTableColumn(3),
+            getContentsOfTableColumn(4),
             getTableColumnsCount,
           ])(tableAfterMove);
 
@@ -1032,7 +1097,7 @@ describe("Render all views", async () => {
           const tableBeforeMove = document.querySelector(".table-part");
 
           const [testRowToDelete, rowCountBeforeEdit] = over([
-            getContentOfTableRow(6),
+            getContentsOfTableRow(6),
             getTableRowsCount,
           ])(tableBeforeMove);
 
@@ -1067,7 +1132,7 @@ describe("Render all views", async () => {
           const tableBeforeMove = document.querySelector(".table-part");
 
           const [testColumnToDelete, columnCountBeforeEdit] = over([
-            getContentOfTableColumn(4),
+            getContentsOfTableColumn(4),
             getTableColumnsCount,
           ])(tableBeforeMove);
 
@@ -1220,9 +1285,11 @@ describe("Render all views", async () => {
           });
 
           test("relative link to fictitious .org file in subdir", async () => {
+            testSetup();
             const elem = screen.getAllByText(
               "a fictitious .org file in a sub-directory",
             );
+            screen.debug();
             expect(elem.length).toEqual(1);
             expect(elem[0]).toHaveAttribute(
               "data-target",

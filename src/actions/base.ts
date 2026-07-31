@@ -239,7 +239,7 @@ export const clearModalStack = (): BaseAction => ({
 
 export const activatePopup = (
   popupType: PopupType,
-  data: Record<string, string>,
+  data: Record<string, string | number>,
 ): BaseAction => ({
   type: "ACTIVATE_POPUP",
   popupType,

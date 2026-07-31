@@ -39,7 +39,12 @@ describe("color unit tests", () => {
       b: testB,
       alpha: testAlpha,
     } = fcRandomColorObject(fcGen);
-    const actualCSS = convertColorObjectIntoCSS([testR, testG, testB, testAlpha]);
+    const actualCSS = convertColorObjectIntoCSS([
+      testR,
+      testG,
+      testB,
+      testAlpha,
+    ]);
 
     expect(actualCSS.startsWith("rgba")).toBeTruthy();
   });
@@ -47,10 +52,9 @@ describe("color unit tests", () => {
   test.prop([fc.gen()])("interpolateColors", (fcGen) => {
     const [[testColorA, testColorB], testInterpolationFactor] = over<
       Array<ColorObject> | number
-    >([fcTwoRandomColorObjects, fcRandomFloatBetweenZeroAndOneExclusive])(fcGen) as [
-      [ColorObject, ColorObject],
-      number,
-    ];
+    >([fcTwoRandomColorObjects, fcRandomFloatBetweenZeroAndOneExclusive])(
+      fcGen,
+    ) as [[ColorObject, ColorObject], number];
     const actualColorObject: ColorObject = interpolateColors(
       testColorA,
       testColorB,
@@ -68,10 +72,9 @@ describe("color unit tests", () => {
   test.prop([fc.gen()])("interpolateColorsAndReturnCSS", (fcGen) => {
     const [[testColorA, testColorB], testInterpolationFactor] = over<
       Array<ColorObject> | number
-    >([fcTwoRandomColorObjects, fcRandomFloatBetweenZeroAndOneExclusive])(fcGen) as [
-      [ColorObject, ColorObject],
-      number,
-    ];
+    >([fcTwoRandomColorObjects, fcRandomFloatBetweenZeroAndOneExclusive])(
+      fcGen,
+    ) as [[ColorObject, ColorObject], number];
     const actualCSS: string = interpolateColorsAndReturnCSS(
       testColorA,
       testColorB,

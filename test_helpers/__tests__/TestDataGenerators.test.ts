@@ -358,7 +358,6 @@ describe("TestDataGenerators suite", () => {
                 repeaterUnit: expect.any(String),
                 repeaterDeadlineValue: expect.any(String),
                 repeaterDeadlineUnit: expect.any(String),
-
               });
 
               expect(
@@ -409,7 +408,6 @@ describe("TestDataGenerators suite", () => {
                 repeaterUnit: expect.any(String),
                 repeaterDeadlineValue: undefined,
                 repeaterDeadlineUnit: undefined,
-
               });
 
               expect(
@@ -457,7 +455,6 @@ describe("TestDataGenerators suite", () => {
                 repeaterUnit: expect.any(String),
                 repeaterDeadlineValue: expect.any(String),
                 repeaterDeadlineUnit: expect.any(String),
-
               });
 
               expect(
@@ -508,7 +505,6 @@ describe("TestDataGenerators suite", () => {
                 repeaterUnit: expect.any(String),
                 repeaterDeadlineValue: undefined,
                 repeaterDeadlineUnit: undefined,
-
               });
 
               expect(
@@ -555,7 +551,6 @@ describe("TestDataGenerators suite", () => {
                 repeaterUnit: expect.any(String),
                 repeaterDeadlineValue: expect.any(String),
                 repeaterDeadlineUnit: expect.any(String),
-
               });
 
               expect(
@@ -606,7 +601,6 @@ describe("TestDataGenerators suite", () => {
                 repeaterUnit: expect.any(String),
                 repeaterDeadlineValue: undefined,
                 repeaterDeadlineUnit: undefined,
-
               });
 
               expect(
@@ -654,7 +648,6 @@ describe("TestDataGenerators suite", () => {
                 repeaterUnit: expect.any(String),
                 repeaterDeadlineValue: expect.any(String),
                 repeaterDeadlineUnit: expect.any(String),
-
               });
 
               expect(
@@ -705,7 +698,6 @@ describe("TestDataGenerators suite", () => {
                 repeaterUnit: expect.any(String),
                 repeaterDeadlineValue: undefined,
                 repeaterDeadlineUnit: undefined,
-
               });
 
               expect(

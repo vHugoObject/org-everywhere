@@ -1,5 +1,10 @@
 import { map } from "lodash/fp";
-import type { TimestampUnit, OrgCheckboxState, RepeaterType, DelayType } from "../types";
+import type {
+  TimestampUnit,
+  OrgCheckboxState,
+  RepeaterType,
+  DelayType,
+} from "../types";
 
 export const HOURSINAYEAR: number = 8760;
 export const DAYSINAYEAR: number = 365;
@@ -31,7 +36,6 @@ export const REPEATERTYPESSET: Set<string> = new Set(REPEATERTYPES);
 
 export const DELAYTYPES: Array<DelayType> = ["-", "--"];
 export const DELAYTYPESSET: Set<string> = new Set(DELAYTYPES);
-
 
 export const ORGTIMESTAMPDATEKEYNAMES: Array<string> = [
   "year",

@@ -2,9 +2,6 @@ import { List, Set } from "immutable";
 import type { MapOf } from "immutable";
 import type { ActionTypes } from "redux-undo";
 
-
-
-
 export type OrgTimestampPart = {
   isActive: boolean;
   withStartTime: boolean;

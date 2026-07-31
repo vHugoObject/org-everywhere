@@ -57,7 +57,7 @@ const testCellRenderer = async (): Promise<
   testStore.dispatch(parseFile(TESTFILEPATH, multipleTables));
   testStore.dispatch(setPath(TESTFILEPATH));
 
-  const testState: State = testStore.getState();
+  const testState = testStore.getState();
   const testHeaderId: number = testState.org.present.getIn([
     "files",
     TESTFILEPATH,

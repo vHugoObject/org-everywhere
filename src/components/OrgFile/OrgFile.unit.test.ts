@@ -452,7 +452,7 @@ ${description}`;
     const testOrgFile = readFixture("logbook_and_log_notes");
     test("Parse and export does not change original file", () => {
       const exported = parseAndExportOrgFile(testOrgFile);
-      expect(testOrgFile).toEqual(exported);
+      expect(exported).toEqual(testOrgFile);
     });
 
     const parsed = parseOrg(testOrgFile).toJS();

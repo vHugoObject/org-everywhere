@@ -183,8 +183,7 @@ const timestampFromRegexMatch = (
     repeaterDeadlineUnit,
   ] = cond<Array<string | undefined>>([
     [
-      () =>
-        isValidRepeaterType(firstDelayRepeatType),
+      () => isValidRepeaterType(firstDelayRepeatType),
       constant([
         firstDelayRepeatType,
         firstDelayRepeatValue,
@@ -194,8 +193,7 @@ const timestampFromRegexMatch = (
       ]),
     ],
     [
-      () =>
-        isValidRepeaterType(secondDelayRepeatType),
+      () => isValidRepeaterType(secondDelayRepeatType),
       constant([
         secondDelayRepeatType,
         secondDelayRepeatValue,
@@ -212,8 +210,7 @@ const timestampFromRegexMatch = (
 
   const [delayType, delayValue, delayUnit] = cond<Array<string | undefined>>([
     [
-      () =>
-        isValidDelayType(firstDelayRepeatType),
+      () => isValidDelayType(firstDelayRepeatType),
       constant([
         firstDelayRepeatType,
         firstDelayRepeatValue,
@@ -221,8 +218,7 @@ const timestampFromRegexMatch = (
       ]),
     ],
     [
-      () =>
-        isValidDelayType(secondDelayRepeatType),
+      () => isValidDelayType(secondDelayRepeatType),
       constant([
         secondDelayRepeatType,
         secondDelayRepeatValue,

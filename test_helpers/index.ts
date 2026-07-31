@@ -1,9 +1,11 @@
-import { render, type RenderResult } from 'vitest-browser-react'
-import { type UserEvent, userEvent } from "vitest/browser"
+import { render, type RenderResult } from "vitest-browser-react";
+import { type UserEvent, userEvent } from "vitest/browser";
 import { BrowserRouter } from "react-router-dom";
 
-export const setup = async(jsx: React.JSX.Element): Promise<{user: UserEvent, screen: RenderResult}> => {
-  const screen = await render(jsx)
+export const setup = async (
+  jsx: React.JSX.Element,
+): Promise<{ user: UserEvent; screen: RenderResult }> => {
+  const screen = await render(jsx);
   return {
     user: userEvent.setup(),
     screen,
@@ -20,4 +22,4 @@ export const renderWithRouter = (ui: React.ReactNode, { route = "/" } = {}) => {
 };
 
 export const sleep = async (ms: number): Promise<void> =>
-  await new Promise((resolve) => setTimeout(resolve, ms))
+  await new Promise((resolve) => setTimeout(resolve, ms));

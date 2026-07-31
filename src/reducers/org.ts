@@ -26,6 +26,7 @@ import type {
   OrgPropertyListItem,
   OrgState,
   OrgTableCell,
+  OrgTable,
   OrgTableRow,
   OrgTimestamp,
   OrgTimestampPart,

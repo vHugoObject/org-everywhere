@@ -286,7 +286,32 @@ export const applyFileSettingsFromConfig = (state, config) => {
   return state.set("fileSettings", fileSettings);
 };
 
-const getInitialStateWithDefaultValues = () => {
+const getInitialStateWithDefaultValues = (): {
+  syncBackend: Map<unknown, unknown>;
+  org: {
+    past: never[];
+    present: import("immutable").MapOf<{
+      files: Map<unknown, unknown>;
+      fileSettings: never[];
+      opennessState: Map<unknown, unknown>;
+      search: import("immutable").MapOf<{
+        searchFilter: string;
+        searchFilterExpr: never[];
+      }>;
+      bookmarks: import("immutable").MapOf<{
+        search: List<unknown>;
+        "task-list": List<unknown>;
+        refile: List<unknown>;
+      }>;
+    }>;
+    future: never[];
+  };
+  base: import("immutable").MapOf<{
+    isLoading: Set<unknown>;
+    finderTab: string;
+  }>;
+  capture: Map<unknown, unknown>;
+} => {
   let initialState = {
     syncBackend: Map(),
     org: {

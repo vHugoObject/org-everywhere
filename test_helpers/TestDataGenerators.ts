@@ -20,7 +20,7 @@ import {
   sortBy,
   merge,
   range,
-  take
+  take,
 } from "lodash/fp";
 import { match } from "ts-pattern";
 import {
@@ -77,17 +77,16 @@ import {
   TESTSECONDSINAMINUTE,
 } from "./Constants";
 
-
 export const randomArrayValue = pipe([shuffle, first]);
 export const randomArrayIndex = pipe([range(0), randomArrayValue]);
 export const twoRandomArrayIndices = pipe([range(0), shuffle, take(2)]);
 export const threeRandomArrayIndices = pipe([range(0), shuffle, take(3)]);
 export const randomArrayIndexFromOne = pipe([range(1), randomArrayValue]);
 export const randomArrayIndexMinusLastIndex = pipe([
-    minusOne,
-    range(0),
-    randomArrayValue,
-  ]);
+  minusOne,
+  range(0),
+  randomArrayValue,
+]);
 
 // fast-check
 
@@ -685,7 +684,10 @@ export const fcRandomColorObject = (fcGen: fc.GeneratorValue): ColorObject => {
 
 export const fcNLengthArrayOfRandomColorObjects = curry(
   (count: number, fcGen: fc.GeneratorValue): Array<ColorObject> => {
-    return unfold((_: number): ColorObject => fcRandomColorObject(fcGen), count);
+    return unfold(
+      (_: number): ColorObject => fcRandomColorObject(fcGen),
+      count,
+    );
   },
 );
 
