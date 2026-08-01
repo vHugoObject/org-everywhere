@@ -466,3 +466,33 @@ export const arrayCombinations = pipe([
   arraySubsets,
   filter(pipe([size, lt(1)])),
 ]);
+
+
+const posixSplitPath = (filename: string): string[] | undefined => {
+  // Split a filename into [dir, root, basename, name, ext], unix version
+  // 'root' is just a slash, or nothing.
+  const splitPathRe = /^((\/?)(?:[^\/]*\/)*)((\.{1,2}|[^\/]+?|)(\.[^.\/]*|))[\/]*$/;
+
+  return splitPathRe.exec(filename)?.slice(1);
+}
+
+
+export const pathParse = (pathString: string): { root: string; dir: string; base: string; ext: string; name: string; } => {
+  if (typeof pathString !== 'string') {
+    throw new TypeError(
+      "Parameter 'pathString' must be a string, not " + typeof pathString
+    );
+  }
+  var allParts = posixSplitPath(pathString);
+  if (!allParts || allParts.length !== 5) {
+    throw new TypeError("Invalid path '" + pathString + "'");
+  }
+
+  return {
+    root: allParts[1],
+    dir: allParts[0].slice(0, -1),
+    base: allParts[2],
+    ext: allParts[4],
+    name: allParts[3],
+  };
+};

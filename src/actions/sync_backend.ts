@@ -2,7 +2,6 @@ import { addSeconds } from "date-fns";
 import type { MapOf } from "immutable";
 import { List } from "immutable";
 import { get } from "lodash/fp";
-import pathParse from "path-parse";
 import type { Dispatch } from "redux";
 import { ActionCreators } from "redux-undo";
 import { createGitlabOAuth } from "../sync_backend_clients/gitlab_sync_backend_client";
@@ -17,6 +16,7 @@ import {
   localStorageAvailable,
   persistField,
 } from "../util/settings_persister";
+import { pathParse } from "../util/transformers"
 import {
   clearModalStack,
   hideLoadingMessage,
