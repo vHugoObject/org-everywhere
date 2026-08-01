@@ -9,7 +9,7 @@ import {
 } from "../../lib/parse_org";
 import { exportOrg, createRawDescriptionText } from "../../lib/export_org";
 import { newHeaderWithTitle } from "../../lib/parse_org";
-import readFixture from "../../../test_helpers/index";
+import readFixture from "../../../test_helpers/NodeTestingHelpers";
 import { noLogRepeatEnabledP } from "../../reducers/org";
 import { fromJS } from "immutable";
 

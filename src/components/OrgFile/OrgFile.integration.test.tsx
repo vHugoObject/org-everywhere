@@ -7,7 +7,7 @@ import { createStore, applyMiddleware } from "redux";
 import { format } from "date-fns/fp";
 import OrgFile from "./";
 import HeaderBar from "../HeaderBar";
-import readFixture from "../../../test_helpers/index";
+import readFixture from "../../../test_helpers/NodeTestingHelpers";
 import rootReducer from "../../reducers/";
 import { setPath, parseFile } from "../../actions/org";
 import { setShouldLogIntoDrawer } from "../../actions/base";

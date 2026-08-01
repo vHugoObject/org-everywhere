@@ -22,7 +22,7 @@ import {
   timestampPartObjectForDate,
 } from "../../lib/timestamps";
 import { readInitialState } from "../../util/settings_persister";
-import readFixture from "../../../test_helpers/index";
+import readFixture from "../../../test_helpers/NodeTestingHelpers";
 
 describe("org reducer", () => {
   // Given a `header`, return its `title` and `nestingLevel`.

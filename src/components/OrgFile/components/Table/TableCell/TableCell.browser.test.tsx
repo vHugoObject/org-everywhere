@@ -1,9 +1,8 @@
 import React from "react";
 import thunk from "redux-thunk";
-import { describe, expect, afterEach } from "vitest";
+import { describe, expect, afterEach, test } from "vitest";
 import { type RenderResult, cleanup } from "vitest-browser-react";
 import type { UserEvent } from "vitest/browser";
-import { test } from "@fast-check/vitest";
 import { MemoryRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 import { createStore, applyMiddleware } from "redux";
@@ -11,7 +10,7 @@ import { trim, property, pipe } from "lodash/fp";
 import type { MapOf } from "immutable";
 import type { OrgTableCell, State } from "../../../../../types";
 import multipleTables from "../../../../../../test_helpers/fixtures/multiple_tables.org?raw";
-import { setup } from "../../../../../../test_helpers/index";
+import { setup } from "../../../../../../test_helpers/BrowserTestingHelpers";
 import {
   TESTBASESTATE,
   TESTFILEPATH,

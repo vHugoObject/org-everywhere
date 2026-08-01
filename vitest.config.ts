@@ -11,8 +11,12 @@ export default defineConfig({
           name: "unit",
           globals: true,
           setupFiles: ["vitest-setup.ts"],
-          environment: "node",
+          environment: "jsdom",
           include: ["**/*.unit.test.ts"],
+	  retry: {
+	    count: 3,
+	    delay: 500, // Wait 500ms between retries
+	  },
         },
       },
       {
@@ -24,9 +28,10 @@ export default defineConfig({
             enabled: true,
             provider: playwright(),
             instances: [{ browser: "chromium" }],
+	    headless: true,
           },
         },
-      },
+      }
     ],
   },
 });

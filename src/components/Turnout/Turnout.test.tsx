@@ -1,7 +1,7 @@
 import React from "react";
 import { fc, test } from "@fast-check/vitest";
 import { describe } from "vitest";
-import { renderWithRouter } from "../../../test_helpers/index";
+import { renderWithRouter } from "../../../test_helpers/NodeTestingHelpers";
 import Turnout from "./index";
 
 describe("Turnout", async () => {

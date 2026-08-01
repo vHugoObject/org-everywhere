@@ -1,3 +1,4 @@
+import React from "react";
 import { render, type RenderResult } from "vitest-browser-react";
 import { type UserEvent, userEvent } from "vitest/browser";
 import { BrowserRouter } from "react-router-dom";

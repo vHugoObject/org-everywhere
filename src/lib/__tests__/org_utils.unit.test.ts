@@ -5,7 +5,7 @@ import { pipe, shuffle, first, range } from "lodash/fp";
 import { format } from "date-fns";
 import { createStore, applyMiddleware } from "redux";
 import thunk from "redux-thunk";
-import readFixture from "../../../test_helpers/index";
+import readFixture from "../../../test_helpers/NodeTestingHelpers";
 import { parseOrg } from "../parse_org.js";
 import {
   setPath,

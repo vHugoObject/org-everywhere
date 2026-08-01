@@ -1,6 +1,6 @@
 import React from "react";
 import thunk from "redux-thunk";
-import { describe, expect, afterEach } from "vitest";
+import { describe, expect, afterEach, vi } from "vitest";
 import { test } from "@fast-check/vitest";
 import { add } from "lodash/fp";
 import { MemoryRouter } from "react-router-dom";
@@ -24,7 +24,7 @@ import {
   TESTBASESTATE,
   TESTFILEPATH,
 } from "../../../../../../../test_helpers/Constants";
-import { setup } from "../../../../../../../test_helpers/index";
+import { setup } from "../../../../../../../test_helpers/BrowserTestingHelpers";
 import HeaderBar from "../../../../../HeaderBar";
 import rootReducer from "../../../../../../reducers/";
 import {

@@ -1,10 +1,10 @@
 import React from "react";
 import thunk from "redux-thunk";
+import { describe, expect, afterEach, test, assert } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 import { createStore, applyMiddleware } from "redux";
 import { trim } from "lodash/fp";
-import { describe, expect, afterEach, test, assert } from "vitest";
 import { type RenderResult, cleanup } from "vitest-browser-react";
 import type { UserEvent } from "vitest/browser";
 import type { MapOf } from "immutable";
@@ -28,7 +28,7 @@ import {
   getTableTotalRowsCount,
 } from "../../../../../lib/org_utils";
 import multipleTables from "../../../../../../test_helpers/fixtures/multiple_tables.org?raw";
-import { setup, sleep } from "../../../../../../test_helpers/index";
+import { setup, sleep } from "../../../../../../test_helpers/NodeTestingHelpers";
 import {
   TESTBASESTATE,
   TESTFILEPATH,

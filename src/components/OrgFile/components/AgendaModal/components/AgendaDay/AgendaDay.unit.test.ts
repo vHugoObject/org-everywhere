@@ -5,7 +5,7 @@ import AgendaDay from "./index";
 import { Map } from "immutable";
 import { parseISO } from "date-fns";
 
-import readFixture from "../../../../../../../test_helpers/index";
+import readFixture from "../../../../../../../test_helpers/NodeTestingHelpers";
 
 describe("Unit Tests for AgendaDay", () => {
   const component = new AgendaDay();

@@ -2,7 +2,7 @@
 /* eslint no-unused-vars: ["error", { "varsIgnorePattern": "^gics(Or)?$" }] */
 import { describe, expect } from "vitest";
 import { parseOrg } from "../parse_org";
-import readFixture from "../../../test_helpers/index";
+import readFixture from "../../../test_helpers/NodeTestingHelpers";
 import {
   isMatch,
   computeCompletions,

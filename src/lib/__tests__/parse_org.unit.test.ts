@@ -3,7 +3,7 @@ import { describe, expect } from "vitest";
 import { test, fc } from "@fast-check/vitest";
 import { forEach } from "lodash/fp";
 import type { OrgElement, OrgTimestampPart } from "../../types";
-import readFixture from "../../../test_helpers/index";
+import readFixture from "../../../test_helpers/NodeTestingHelpers";
 import { RENDERASTEXTESTCASES } from "./test_constants.ts";
 import {
   fcRandomStringGenerator,
