@@ -1,4 +1,4 @@
-import React, { type Ref } from "react";
+import React, { type Ref, type CSSProperties } from "react";
 import "./stylesheet.css";
 import { getIcon } from "../../../../../UI/icons.tsx";
 import classNames from "classnames";
@@ -13,8 +13,8 @@ interface ActionButtonArguments {
   shouldSpinSubIcon: boolean;
   letter: string;
   additionalClassName: string;
-  style: string;
-  tooltip;
+  style: CSSProperties;
+  tooltip: string;
 }
 const ActionButton = ({
   iconName,

@@ -1,7 +1,7 @@
 // INFO: There's an <ActionDrawer> component within the <OrgFile>
 // component, as well.
 
-import React, { Fragment } from "react";
+import React, { Fragment, type CSSProperties } from "react";
 import { connect } from "react-redux";
 import type { Dispatch } from "redux";
 import { bindActionCreators } from "redux";
@@ -34,8 +34,7 @@ const ActionDrawer = ({ org, files, syncBackend, path }: ActionDrawerProps) => {
 
     if (!fileName) return;
 
-    fileName = ensureCompleteFilename(fileName);
-    let newPath = `${path}/${fileName}`;
+    let newPath = `${path}/${ensureCompleteFilename(fileName)}`;
 
     if (includes(newPath, files)) {
       alert("File already exists. Aborting.");
@@ -45,7 +44,7 @@ const ActionDrawer = ({ org, files, syncBackend, path }: ActionDrawerProps) => {
     }
   };
 
-  const mainButtonStyle = {
+  const mainButtonStyle: CSSProperties = {
     opacity: 1,
     position: "relative",
     zIndex: 1,
@@ -75,17 +74,15 @@ const ActionDrawer = ({ org, files, syncBackend, path }: ActionDrawerProps) => {
   );
 };
 
-const mapStateToProps = (state) => {
+const mapStateToProps = (state): {path: string, files: Array<string>} => {
   const path: string = state.syncBackend.get("currentPath");
   let files: List<MapOf<DirectoryListingEntry>> = state.syncBackend.getIn([
     "currentFileBrowserDirectoryListing",
     "listing",
   ]);
-  // this does not make sense
-  files = files ? files.map((e) => e.get("id")).toJS() : [];
   return {
     path,
-    files,
+    files: files ? files.map((e) => e.get("id")).toJS() : [],
   };
 };
 
