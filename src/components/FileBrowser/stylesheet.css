@@ -1,5 +1,7 @@
 @import "../../colors.css";
 
+
+
 .file-browser-container a {
   text-decoration: none;
   color: var(--base03);
@@ -25,22 +27,21 @@
 }
 
 .file-browser__file-list__element:last-of-type {
-  border-bottom: 1px solid var(--base2);
+  padding: 10px;
 }
 
 .file-browser__file-list__element--load-more-row:last-of-type {
   border-bottom: none;
   text-align: center;
-  color: var(--base2);
+  color: var(--base02);
   font-weight: bold;
+  padding: 10px 10px;
 }
 
 .file-browser__file-list__loading-more-container {
   display: flex;
   justify-content: center;
-
-  color: var(--base2);
-
+  color: var(--base02);
   margin-top: 10px;
 }
 
@@ -50,4 +51,12 @@
 
 .file-browser__file-list__icon--directory {
   color: var(--base00);
+}
+
+.file-browser__action-drawer-container {
+  width: 10%;
+  position: fixed;
+  bottom: 1%;
+  right: 8%;
+  z-index: 2;
 }

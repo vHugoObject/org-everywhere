@@ -9,7 +9,7 @@ import { includes } from "lodash/fp";
 import { List } from "immutable";
 import type { MapOf } from "immutable";
 import type { Client, DirectoryListingEntry } from "../../../../types";
-import "./../../../OrgFile/components/ActionDrawer/stylesheet.css";
+import "../../stylesheet.css";
 
 import * as orgActions from "../../../../actions/org";
 import * as syncActions from "../../../../actions/sync_backend";
@@ -52,11 +52,10 @@ const ActionDrawer = ({ org, files, syncBackend, path }: ActionDrawerProps) => {
   };
 
   return (
-    <div className="action-drawer-container nice-scroll">
+    <div className="file-browser__action-drawer-container nice-scroll">
       {
         <Fragment>
           <div
-            className="action-drawer__capture-buttons-container"
             style={{
               marginLeft: "auto",
               marginRight: 0,

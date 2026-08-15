@@ -126,8 +126,6 @@ const FileBrowser = ({
         </h3>
       )}
 
-      <ActionDrawer />
-
       <ul className="file-browser__file-list">
         {!isTopLevelDirectory && (
           <Link to={`/files${getParentDirectoryPath()}`}>
@@ -174,6 +172,7 @@ const FileBrowser = ({
             </li>
           ))}
       </ul>
+      <ActionDrawer />
     </div>
   );
 };
