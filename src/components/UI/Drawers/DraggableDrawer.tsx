@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef, type ReactElement } from "react";
 
 import { Motion, spring } from "react-motion";
 import { IconContext } from "react-icons";
@@ -6,12 +6,22 @@ import { FaTimes } from "react-icons/fa";
 import classNames from "classnames";
 import "./stylesheet.css";
 
+
+// what we really need is an element that
+// specifically handles modals for OrgFile
+interface DraggableDrawerProps {
+  children: ReactElement;
+  shouldIncludeCloseButton: boolean;
+  onClose: () => void;
+  maxSize: boolean;
+}
+
 const DraggableDrawer = ({
   children,
   shouldIncludeCloseButton,
   onClose,
   maxSize = false,
-}) => {
+}: DraggableDrawerProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const [dragOffsetY, setDragOffsetY] = useState(null);
 
@@ -20,9 +30,11 @@ const DraggableDrawer = ({
   }, []);
 
   const initialClientY = useRef();
-  const innerContainer = useRef();
+  const innerContainer = useRef(null);
 
   const innerContainerHeight = useRef();
+
+
   useLayoutEffect(() => {
     innerContainerHeight.current = innerContainer.current.offsetHeight;
   });
@@ -47,8 +59,8 @@ const DraggableDrawer = ({
 
     if (
       isScrollingDown &&
-      innerContainer.current.scrollHeight - innerContainer.current.scrollTop <=
-        innerContainer.current.clientHeight
+	innerContainer.current.scrollHeight - innerContainer.current.scrollTop <=
+          innerContainer.current.clientHeight
     ) {
       event.preventDefault();
     } else if (!isScrollingDown && innerContainer.current.scrollTop === 0) {
@@ -113,12 +125,12 @@ const DraggableDrawer = ({
   const innerStyle = {
     offsetY:
       dragOffsetY ||
-      spring(
-        isVisible ? 0 : innerContainerHeight.current || window.innerHeight,
-        {
-          stiffness: 300,
-        },
-      ),
+	spring(
+          isVisible ? 0 : innerContainerHeight.current || window.innerHeight,
+          {
+            stiffness: 300,
+          },
+	),
   };
 
   return (
@@ -126,14 +138,12 @@ const DraggableDrawer = ({
       {(style) => {
         const interpolatedStyle = {
           transform: `translateY(${style.offsetY}px)`,
-        };
-
+        }
         // For maximized drawers, there's different rules:
         if (maxSize) {
           interpolatedStyle.height = "92%";
           interpolatedStyle.overflow = "none";
         }
-
         return (
           <div
             className={outerClassName}

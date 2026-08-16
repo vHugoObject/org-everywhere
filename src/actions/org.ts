@@ -396,7 +396,7 @@ export const updateHeaderTitle = (
   headerId: number,
   newRawTitle: string,
 ): OrgAction => ({
-  type: "UPDATE_HEADER_TppITLE",
+  type: "UPDATE_HEADER_TITLE",
   headerId,
   newRawTitle,
   dirtying: true,
