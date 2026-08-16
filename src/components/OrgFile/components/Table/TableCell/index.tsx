@@ -25,10 +25,11 @@ type TableCellProps = {
   cellId: number;
   row: number;
   column: number;
+  minWidth: number
 };
 
 const TableCell = ({
-  props: { filePath, headerIndex, descriptionItemIndex, cellId, row, column },
+  props: { filePath, headerIndex, descriptionItemIndex, cellId, row, column, minWidth },
 }: {
   props: TableCellProps;
 }) => {
@@ -96,6 +97,7 @@ const TableCell = ({
       onDoubleClick={handleDoubleClick}
       ref={tableCellRef}
       tabIndex={-1}
+      style={{minWidth}}
     >
       {isCellSelected && inTableEditMode ? (
         <TableCellEditContainer
