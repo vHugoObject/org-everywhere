@@ -2,23 +2,23 @@ import { pipe, over, identity, partial, uniq } from "lodash/fp";
 import { test, fc } from "@fast-check/vitest";
 import { describe, expect } from "vitest";
 import {
-  fcRandomUpperAlphaChar,
-  fcRandomLowerAlphaChar,
-  fcRandomStringGenerator,
-  fcRandomArrayChunkOfRandomSize,
-  fcRandomItemFromArray,
+  fcGenRandomUpperAlphaChar,
+  fcGenRandomLowerAlphaChar,
+  fcGenRandomStringGenerator,
+  fcGenRandomArrayChunkOfRandomSize,
+  fcGenRandomItemFromArray,
 } from "../../../test_helpers/TestDataGenerators";
 import { isUpperAlphaCharacter, reduceReplaceAll } from "../transformers";
 
 describe("transformers test suite", () => {
   describe("isUpperAlphaCharacter", () => {
     test.prop([fc.gen()])("true", (fcGen) => {
-      const char = fcRandomUpperAlphaChar(fcGen);
+      const char = fcGenRandomUpperAlphaChar(fcGen);
       expect(isUpperAlphaCharacter(char)).toBeTruthy();
     });
 
     test.prop([fc.gen()])("false - lowercase", (fcGen) => {
-      const char = fcRandomLowerAlphaChar(fcGen);
+      const char = fcGenRandomLowerAlphaChar(fcGen);
       expect(isUpperAlphaCharacter(char)).toBeFalsy();
     });
 
@@ -30,11 +30,11 @@ describe("transformers test suite", () => {
 
   describe("reduceReplaceAll", () => {
     test.prop([fc.gen()])("true", (fcGen) => {
-      const testStr: string = fcRandomStringGenerator(fcGen);
+      const testStr: string = fcGenRandomStringGenerator(fcGen);
       const [testValuesToReplace, randomValueToReplace] = pipe([
-        fcRandomArrayChunkOfRandomSize,
+        fcGenRandomArrayChunkOfRandomSize,
         uniq,
-        over([identity, fcRandomItemFromArray(fcGen)]),
+        over([identity, fcGenRandomItemFromArray(fcGen)]),
       ])(fcGen, testStr);
 
       const actualResult = reduceReplaceAll(testValuesToReplace, testStr);

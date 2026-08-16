@@ -3,8 +3,8 @@ import { describe, expect, assert } from "vitest";
 import { over } from "lodash/fp";
 import type { ColorObject } from "color";
 import {
-  fcRandomColorObject,
-  fcRandomFloatBetweenZeroAndOneExclusive,
+  fcGenRandomColorObject,
+  fcGenRandomFloatBetweenZeroAndOneExclusive,
   fcTwoRandomColorObjects,
 } from "../../../test_helpers/TestDataGenerators";
 import {
@@ -21,7 +21,7 @@ describe("color unit tests", () => {
       g: testG,
       b: testB,
       alpha: testAlpha,
-    } = fcRandomColorObject(fcGen);
+    } = fcGenRandomColorObject(fcGen);
     const actualColorObject = createColorObject(testR, testG, testB, testAlpha);
 
     expect(actualColorObject).toEqual({
@@ -38,7 +38,7 @@ describe("color unit tests", () => {
       g: testG,
       b: testB,
       alpha: testAlpha,
-    } = fcRandomColorObject(fcGen);
+    } = fcGenRandomColorObject(fcGen);
     const actualCSS = convertColorObjectIntoCSS([
       testR,
       testG,
@@ -52,7 +52,7 @@ describe("color unit tests", () => {
   test.prop([fc.gen()])("interpolateColors", (fcGen) => {
     const [[testColorA, testColorB], testInterpolationFactor] = over<
       Array<ColorObject> | number
-    >([fcTwoRandomColorObjects, fcRandomFloatBetweenZeroAndOneExclusive])(
+    >([fcTwoRandomColorObjects, fcGenRandomFloatBetweenZeroAndOneExclusive])(
       fcGen,
     ) as [[ColorObject, ColorObject], number];
     const actualColorObject: ColorObject = interpolateColors(
@@ -72,7 +72,7 @@ describe("color unit tests", () => {
   test.prop([fc.gen()])("interpolateColorsAndReturnCSS", (fcGen) => {
     const [[testColorA, testColorB], testInterpolationFactor] = over<
       Array<ColorObject> | number
-    >([fcTwoRandomColorObjects, fcRandomFloatBetweenZeroAndOneExclusive])(
+    >([fcTwoRandomColorObjects, fcGenRandomFloatBetweenZeroAndOneExclusive])(
       fcGen,
     ) as [[ColorObject, ColorObject], number];
     const actualCSS: string = interpolateColorsAndReturnCSS(

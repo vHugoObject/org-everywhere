@@ -6,11 +6,11 @@ import type { OrgElement, OrgTimestampPart } from "../../types";
 import readFixture from "../../../test_helpers/NodeTestingHelpers";
 import { RENDERASTEXTESTCASES } from "./test_constants.ts";
 import {
-  fcRandomStringGenerator,
+  fcGenRandomStringGenerator,
   fcNLengthUniqueStringArrayGenerator,
   fcGenOrgHeadingAsString,
-  fcRandomInBufferSetting,
-  fcRandomAlphaString,
+  fcGenRandomInBufferSetting,
+  fcGenRandomAlphaString,
   fcGenRandomOrgHeadingAsString,
   fcGenOrgTimestampPartRecord,
 } from "../../../test_helpers/TestDataGenerators";
@@ -87,7 +87,7 @@ describe("Test the parser", () => {
     test.prop([fc.gen()])(
       "Parses inline-markup where closing delim is followed by ;",
       (fcGen) => {
-        const testString: string = fcRandomAlphaString(fcGen);
+        const testString: string = fcGenRandomAlphaString(fcGen);
         const testMarkup = ` *${testString}*;`;
         const result = parseMarkupAndCookies(testMarkup);
         expectType(result).toEqual(["text", "inline-markup", "text"]);
@@ -99,7 +99,7 @@ describe("Test the parser", () => {
     test.prop([fc.gen()])(
       "Parse headline without trailing newline",
       (fcGen) => {
-        const testString: string = fcRandomStringGenerator(fcGen);
+        const testString: string = fcGenRandomStringGenerator(fcGen);
         const testHeadline: string = `* ${testString}`;
         const result = parseFirstHeaderFromOrg(testHeadline);
         expect(result.description).toEqual([]);
@@ -157,7 +157,7 @@ describe("Test the parser", () => {
     });
 
     test.prop([fc.gen()])("Parses simple line", (fcGen) => {
-      const testString: string = fcRandomAlphaString(fcGen);
+      const testString: string = fcGenRandomAlphaString(fcGen);
       expect(parseRawText(testString).toJS()).toEqual([
         { type: "text", contents: testString },
       ]);
@@ -175,13 +175,13 @@ describe("Test the parser", () => {
     );
 
     test.prop([fc.gen()])("Normal text line", (fcGen) => {
-      const testString = fcRandomStringGenerator(fcGen);
+      const testString = fcGenRandomStringGenerator(fcGen);
       const result = parseTodoKeywordConfig(testString);
       expect(result).toBeNull();
     });
 
     test.prop([fc.gen()])("Other InBuffer Settings", (fcGen) => {
-      const testInBufferSetting: string = fcRandomInBufferSetting(fcGen);
+      const testInBufferSetting: string = fcGenRandomInBufferSetting(fcGen);
       const result = parseTodoKeywordConfig(
         `#+STARTUP: ${testInBufferSetting}`,
       );

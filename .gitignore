@@ -21,3 +21,4 @@ cert/
 *.sw?
 
 .env
+*/_screenshots_

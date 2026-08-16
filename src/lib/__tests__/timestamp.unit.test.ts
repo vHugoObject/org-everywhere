@@ -32,9 +32,9 @@ import {
   APPLYREPEATERTESTCASES,
 } from "./test_constants.ts";
 import {
-  fcRandomRepeaterType,
+  fcGenRandomRepeaterType,
   fcGenValidJSDateObject,
-  fcRandomItemFromArray,
+  fcGenRandomItemFromArray,
   fcGenOrgTimestampPartRecord,
   fcGenOrgTimestampPartRecordWithRepeater,
   fcGenOrgTimestampPartObjectWithRepeaterTypeX,
@@ -88,7 +88,7 @@ describe("timestamp unit tests", () => {
           "valid unit",
           (testNumUnits, fcGen) => {
             const [testTimestampUnit, diffFunction]: [TimestampUnit, Function] =
-              fcRandomItemFromArray(fcGen, UNITSDIFF);
+              fcGenRandomItemFromArray(fcGen, UNITSDIFF);
             const testDate: Date = fcGenValidJSDateObject(fcGen);
             const actualNewDate: Date = addTimestampUnitToDate(
               testTimestampUnit,
@@ -107,7 +107,7 @@ describe("timestamp unit tests", () => {
         test.prop([fc.nat({ max: 10000 }), fc.gen()])(
           "invalid unit",
           (testNumUnits, fcGen) => {
-            const testTimestampUnit = fcRandomItemFromArray(
+            const testTimestampUnit = fcGenRandomItemFromArray(
               fcGen,
               INVALIDUNITS,
             );
@@ -127,7 +127,7 @@ describe("timestamp unit tests", () => {
           "valid unit",
           (testNumUnits, fcGen) => {
             const [testTimestampUnit, diffFunction]: [TimestampUnit, Function] =
-              fcRandomItemFromArray(fcGen, UNITSDIFF);
+              fcGenRandomItemFromArray(fcGen, UNITSDIFF);
             const testDate: Date = fcGenValidJSDateObject(fcGen);
             const actualNewDate: Date = subtractTimestampUnitFromDate(
               testTimestampUnit,
@@ -141,7 +141,7 @@ describe("timestamp unit tests", () => {
         test.prop([fc.nat({ max: 10000 }), fc.gen()])(
           "invalid unit",
           (testNumUnits, fcGen) => {
-            const testTimestampUnit = fcRandomItemFromArray(
+            const testTimestampUnit = fcGenRandomItemFromArray(
               fcGen,
               INVALIDUNITS,
             );
@@ -609,7 +609,7 @@ describe("timestamp unit tests", () => {
     test.prop([fc.boolean(), fc.boolean(), fc.gen()])(
       "createNextRepeatTimestampPartRecord",
       (withStartTime, withDeadline, fcGen) => {
-        const repeaterType: RepeaterType = fcRandomRepeaterType(fcGen);
+        const repeaterType: RepeaterType = fcGenRandomRepeaterType(fcGen);
         const [testPreviousTimestamp, _, repeaterUnit, repeaterValue] =
           fcGenOrgTimestampPartObjectWithRepeaterTypeX(
             { repeaterType, withStartTime, withDeadline },

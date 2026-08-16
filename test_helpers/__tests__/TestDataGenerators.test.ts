@@ -32,15 +32,15 @@ import {
   assertStrings,
 } from "../Asserters";
 import {
-  fcRandomIntegerInRange,
+  fcGenRandomIntegerInRange,
   fcGenValidJSDateObjectString,
   fcGenValidJSDateObject,
-  fcRandomCharacterGenerator,
+  fcGenRandomCharacterGenerator,
   fcShuffledSubarray,
   fcShuffledArray,
   fcNLengthUniqueStringArrayGenerator,
-  fcRandomColorObject,
-  fcRandomObjectKeyValuePair,
+  fcGenRandomColorObject,
+  fcGenRandomObjectKeyValuePair,
   fcGenTimeRangeParts,
   fcGenOrgTimestampPartRecord,
   fcGenRandomOrgTimestampPartRecord,
@@ -128,8 +128,8 @@ describe("TestDataGenerators suite", () => {
         fc.integer({ min: 50, max: 100 }),
       ),
       fc.gen(),
-    ])("fcRandomCharacterGenerator", (testUTFRange, fcGen) => {
-      const actualCharacter: string = fcRandomCharacterGenerator(
+    ])("fcGenRandomCharacterGenerator", (testUTFRange, fcGen) => {
+      const actualCharacter: string = fcGenRandomCharacterGenerator(
         testUTFRange,
         fcGen,
       );
@@ -223,7 +223,7 @@ describe("TestDataGenerators suite", () => {
     test.prop([fc.array(fc.string(), { minLength: 1 }), fc.gen()])(
       "fcShuffledSubarray",
       (testArray, fcGen) => {
-        const testLength = fcRandomIntegerInRange(fcGen, [1, testArray.length]);
+        const testLength = fcGenRandomIntegerInRange(fcGen, [1, testArray.length]);
         const actualShuffledSubarray: Array<string> = fcShuffledSubarray(
           testLength,
           fcGen,
@@ -262,10 +262,10 @@ describe("TestDataGenerators suite", () => {
 
   describe("Random Selection suite", () => {
     test.prop([fc.map(fc.string(), fc.anything(), { minKeys: 1 }), fc.gen()])(
-      "fcRandomObjectKeyValuePair",
+      "fcGenRandomObjectKeyValuePair",
       (testMap, fcGen) => {
         const testObj: Record<string, any> = Object.fromEntries(testMap);
-        const [actualKey, actualValue] = fcRandomObjectKeyValuePair(
+        const [actualKey, actualValue] = fcGenRandomObjectKeyValuePair(
           fcGen,
           testObj,
         );
@@ -275,13 +275,13 @@ describe("TestDataGenerators suite", () => {
   });
 
   describe("Color generators suite", () => {
-    test.prop([fc.gen()])("fcRandomColorObject", (fcGen) => {
+    test.prop([fc.gen()])("fcGenRandomColorObject", (fcGen) => {
       const {
         r: actualR,
         g: actualG,
         b: actualB,
         alpha: actualAlpha,
-      } = fcRandomColorObject(fcGen);
+      } = fcGenRandomColorObject(fcGen);
       assertArrayOfIntegersInRangeInclusive(
         [0, 255],
         [actualR, actualG, actualB],
